@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FMSL Stock Tracker v.c4</title>
+    <title>FMSL Stock Tracker v.c5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
@@ -68,7 +68,7 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.c4</h1>
+            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.c5</h1>
             <div class="flex items-center space-x-4">
                 <div id="auto-refresh-status" class="text-sm text-gray-500 flex items-center space-x-2">
                     <i data-lucide="clock" class="w-4 h-4"></i>
@@ -239,7 +239,7 @@
         let autoRefreshInterval = null;
         let countdownInterval = null;
         let refreshCountdown = 300; // 5 minutes in seconds
-        let FINNHUB_API_KEY = '';
+        let FINNHUB_API_KEY = 'd18ofb1r01qt6geqhb8gd18ofb1r01qt6geqhb90';
 
         // Mock data with persistent prices
         const MOCK_COMPANIES = {
