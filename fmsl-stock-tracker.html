@@ -23,19 +23,45 @@
         .modal-backdrop {
             backdrop-filter: blur(4px);
         }
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .sortable-header:hover {
+            background-color: #f3f4f6;
+        }
+        .sort-indicator {
+            opacity: 0.5;
+            margin-left: 4px;
+        }
+        .sort-active {
+            opacity: 1;
+        }
         .delete-btn {
-            opacity: 0;
             transition: opacity 0.2s;
         }
-        .stock-row:hover .delete-btn {
-            opacity: 1;
+        .auto-refresh-indicator {
+            animation: pulse 2s infinite;
         }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-6">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">FMSL Stock Tracker</h1>
+        <div class="flex items-center justify-between mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker</h1>
+            <div class="flex items-center space-x-4">
+                <div id="auto-refresh-status" class="text-sm text-gray-500 flex items-center space-x-2">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                    <span>Auto-refresh: <span id="refresh-countdown">5:00</span></span>
+                </div>
+                <button id="manual-refresh-btn" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>Refresh Now</span>
+                </button>
+            </div>
+        </div>
         
         <!-- Watchlist Management Section -->
         <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
@@ -68,14 +94,24 @@
 
         <!-- Stock Grid Section -->
         <div id="stock-grid" class="bg-white rounded-2xl shadow-lg p-6">
-            <!-- Grid Header -->
-            <div class="grid grid-cols-6 gap-4 mb-4 pb-3 border-b border-gray-200">
-                <div class="font-semibold text-gray-700 text-center">Market</div>
-                <div class="font-semibold text-gray-700 text-center">Ticker</div>
+            <!-- Grid Header with Sorting -->
+            <div class="grid grid-cols-7 gap-4 mb-4 pb-3 border-b border-gray-200">
+                <div class="font-semibold text-gray-700 text-center sortable-header rounded px-2 py-1" onclick="sortStocks('market')" title="Click to sort by Market">
+                    Market
+                    <i data-lucide="chevron-up-down" class="w-4 h-4 inline sort-indicator" id="sort-market"></i>
+                </div>
+                <div class="font-semibold text-gray-700 text-center sortable-header rounded px-2 py-1" onclick="sortStocks('ticker')" title="Click to sort by Ticker">
+                    Ticker
+                    <i data-lucide="chevron-up-down" class="w-4 h-4 inline sort-indicator" id="sort-ticker"></i>
+                </div>
                 <div class="font-semibold text-gray-700 text-center">Company</div>
                 <div class="font-semibold text-gray-700 text-center">Price</div>
-                <div class="font-semibold text-gray-700 text-center">Change</div>
+                <div class="font-semibold text-gray-700 text-center sortable-header rounded px-2 py-1" onclick="sortStocks('change')" title="Click to sort by Change">
+                    Change
+                    <i data-lucide="chevron-up-down" class="w-4 h-4 inline sort-indicator" id="sort-change"></i>
+                </div>
                 <div class="font-semibold text-gray-700 text-center">Updated</div>
+                <div class="font-semibold text-gray-700 text-center">Actions</div>
             </div>
 
             <!-- Stock Rows Container -->
@@ -181,6 +217,10 @@
         let currentWatchlistId = '';
         let stockData = [];
         let loadingTickers = new Set();
+        let sortConfig = { key: null, direction: 'asc' };
+        let autoRefreshInterval = null;
+        let countdownInterval = null;
+        let refreshCountdown = 300; // 5 minutes in seconds
 
         // Updated mock stock data with realistic prices
         const MOCK_COMPANIES = {
@@ -192,7 +232,7 @@
             AMZN: { name: "Amazon.com, Inc.", market: "NASDAQ", basePrice: 148.75 },
             NVDA: { name: "NVIDIA Corporation", market: "NASDAQ", basePrice: 875.30 },
             META: { name: "Meta Platforms, Inc.", market: "NASDAQ", basePrice: 485.20 },
-            NFLX: { name: "Netflix Inc.", market: "NASDAQ", basePrice: 1205.40 }, // FIXED: NASDAQ + correct price
+            NFLX: { name: "Netflix Inc.", market: "NASDAQ", basePrice: 1205.40 },
             "BRK.B": { name: "Berkshire Hathaway Inc.", market: "NYSE", basePrice: 420.15 },
             JPM: { name: "JPMorgan Chase & Co", market: "NYSE", basePrice: 155.80 },
             JNJ: { name: "Johnson & Johnson", market: "NYSE", basePrice: 165.45 },
@@ -203,13 +243,13 @@
             DIS: { name: "Walt Disney Co", market: "NYSE", basePrice: 95.25 },
             
             // Brazilian stocks (B3) - UPDATED PRICES
-            ITSA3: { name: "Itaúsa", market: "B3", basePrice: 10.85 }, // FIXED: Updated price
+            ITSA3: { name: "Itaúsa", market: "B3", basePrice: 10.85 },
             ITSA4: { name: "Itaúsa", market: "B3", basePrice: 11.20 },
             PETR3: { name: "Petrobras", market: "B3", basePrice: 35.80 },
             PETR4: { name: "Petrobras", market: "B3", basePrice: 36.20 },
             VALE3: { name: "Vale", market: "B3", basePrice: 67.20 },
             BBDC4: { name: "Banco Bradesco", market: "B3", basePrice: 14.30 },
-            BBAS3: { name: "Banco do Brasil", market: "B3", basePrice: 54.80 }, // FIXED: Correct name
+            BBAS3: { name: "Banco do Brasil", market: "B3", basePrice: 54.80 },
             ABEV3: { name: "Ambev", market: "B3", basePrice: 13.70 },
             ITUB4: { name: "Itaú Unibanco", market: "B3", basePrice: 32.50 },
             MGLU3: { name: "Magazine Luiza", market: "B3", basePrice: 2.10 },
@@ -217,6 +257,8 @@
             BBSE3: { name: "BB Seguridade", market: "B3", basePrice: 28.50 },
             CXSE3: { name: "Caixa Seguridade", market: "B3", basePrice: 8.90 },
             ISAE4: { name: "Isa Cteep", market: "B3", basePrice: 11.40 },
+            EGIE3: { name: "Engie Brasil", market: "B3", basePrice: 15.20 },
+            TAEE3: { name: "Taesa", market: "B3", basePrice: 42.80 },
             
             // European stocks
             "SAP.DE": { name: "SAP SE", market: "XETRA", basePrice: 178.50 },
@@ -249,6 +291,114 @@
             }
         }
 
+        // Auto-refresh functionality
+        function startAutoRefresh() {
+            // Clear existing intervals
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            refreshCountdown = 300; // Reset to 5 minutes
+            
+            // Update countdown every second
+            countdownInterval = setInterval(() => {
+                refreshCountdown--;
+                updateCountdownDisplay();
+                
+                if (refreshCountdown <= 0) {
+                    refreshAllStocks();
+                    refreshCountdown = 300; // Reset
+                }
+            }, 1000);
+        }
+
+        function updateCountdownDisplay() {
+            const minutes = Math.floor(refreshCountdown / 60);
+            const seconds = refreshCountdown % 60;
+            const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('refresh-countdown').textContent = display;
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+
+        // Sorting functionality
+        function sortStocks(key) {
+            const currentWatchlist = getCurrentWatchlist();
+            if (!currentWatchlist || stockData.length === 0) return;
+
+            // Update sort configuration
+            if (sortConfig.key === key) {
+                sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortConfig.key = key;
+                sortConfig.direction = 'asc';
+            }
+
+            // Update sort indicators
+            updateSortIndicators();
+
+            // Sort the stock data
+            stockData.sort((a, b) => {
+                let aValue, bValue;
+                
+                switch (key) {
+                    case 'market':
+                        aValue = a.market;
+                        bValue = b.market;
+                        break;
+                    case 'ticker':
+                        aValue = a.ticker;
+                        bValue = b.ticker;
+                        break;
+                    case 'change':
+                        aValue = a.changePercent;
+                        bValue = b.changePercent;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (typeof aValue === 'string') {
+                    aValue = aValue.toLowerCase();
+                    bValue = bValue.toLowerCase();
+                }
+
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            updateStockRows();
+        }
+
+        function updateSortIndicators() {
+            // Reset all indicators
+            ['market', 'ticker', 'change'].forEach(key => {
+                const indicator = document.getElementById(`sort-${key}`);
+                if (indicator) {
+                    indicator.className = 'w-4 h-4 inline sort-indicator';
+                    indicator.setAttribute('data-lucide', 'chevron-up-down');
+                }
+            });
+
+            // Set active indicator
+            if (sortConfig.key) {
+                const activeIndicator = document.getElementById(`sort-${sortConfig.key}`);
+                if (activeIndicator) {
+                    activeIndicator.className = 'w-4 h-4 inline sort-indicator sort-active';
+                    const icon = sortConfig.direction === 'asc' ? 'chevron-up' : 'chevron-down';
+                    activeIndicator.setAttribute('data-lucide', icon);
+                }
+            }
+
+            // Re-initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
         // Utility functions
         function formatPriceByMarket(price, market) {
             switch (market) {
@@ -264,42 +414,21 @@
             }
         }
 
-        // IMPROVED auto-detection logic
         function detectMarketFromTicker(ticker) {
             const upperTicker = ticker.toUpperCase();
             
-            // Check if it's in our known companies first
             if (MOCK_COMPANIES[upperTicker]) {
                 return MOCK_COMPANIES[upperTicker].market;
             }
             
-            // Brazilian stocks pattern
-            if (/[3-6]$|11$/.test(upperTicker)) {
-                return 'B3';
-            }
+            if (/[3-6]$|11$/.test(upperTicker)) return 'B3';
+            if (upperTicker.includes('.DE')) return 'XETRA';
+            if (upperTicker.includes('.T')) return 'TSE';
+            if (upperTicker.includes('.KS')) return 'KRX';
             
-            // German stocks
-            if (upperTicker.includes('.DE')) {
-                return 'XETRA';
-            }
-            
-            // Japanese stocks
-            if (upperTicker.includes('.T')) {
-                return 'TSE';
-            }
-            
-            // Korean stocks
-            if (upperTicker.includes('.KS')) {
-                return 'KRX';
-            }
-            
-            // Common NASDAQ stocks
             const nasdaqStocks = ['AAPL', 'GOOGL', 'GOOG', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX', 'ADBE', 'INTC', 'CSCO', 'CMCSA', 'PEP', 'AVGO', 'TXN', 'QCOM', 'COST', 'SBUX', 'GILD'];
-            if (nasdaqStocks.includes(upperTicker)) {
-                return 'NASDAQ';
-            }
+            if (nasdaqStocks.includes(upperTicker)) return 'NASDAQ';
             
-            // Default to NYSE for other US stocks
             return 'NYSE';
         }
 
@@ -307,21 +436,18 @@
             const upperTicker = ticker.toUpperCase();
             let company = MOCK_COMPANIES[upperTicker];
             
-            // If not found, create based on market detection
             if (!company) {
                 const detectedMarket = forcedMarket && forcedMarket !== 'auto' ? forcedMarket : detectMarketFromTicker(upperTicker);
-                
                 company = {
                     name: getCompanyNameByMarket(upperTicker, detectedMarket),
                     market: detectedMarket,
                     basePrice: getDefaultPriceForMarket(detectedMarket),
                 };
             } else if (forcedMarket && forcedMarket !== 'auto') {
-                // Override market if forced
                 company = { ...company, market: forcedMarket };
             }
 
-            const volatility = Math.random() * 0.08 - 0.04; // -4% to +4% for more realistic changes
+            const volatility = Math.random() * 0.08 - 0.04;
             const price = company.basePrice * (1 + volatility);
             const change = price - company.basePrice;
             const changePercent = (change / company.basePrice) * 100;
@@ -358,7 +484,7 @@
                 case 'XETRA': return Math.random() * 200 + 50;
                 case 'TSE': return Math.random() * 5000 + 1000;
                 case 'KRX': return Math.random() * 100000 + 10000;
-                case 'NASDAQ': return Math.random() * 800 + 100; // Higher range for NASDAQ
+                case 'NASDAQ': return Math.random() * 800 + 100;
                 default: return Math.random() * 300 + 50;
             }
         }
@@ -416,15 +542,14 @@
             const hasWatchlists = watchlists.length > 0;
             const currentWatchlist = getCurrentWatchlist();
             
-            // Show/hide sections
             document.getElementById('empty-state').classList.toggle('hidden', hasWatchlists && currentWatchlist);
             document.getElementById('stock-grid').classList.toggle('hidden', !currentWatchlist);
             document.getElementById('delete-watchlist-btn').classList.toggle('hidden', !currentWatchlist);
             
             updateWatchlistDropdown();
             updateStockRows();
+            updateSortIndicators();
             
-            // Re-initialize Lucide icons
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
@@ -438,7 +563,7 @@
             if (!currentWatchlist) return;
 
             if (currentWatchlist.tickers.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 py-8">No stocks in this watchlist. Click "Add Stock" to get started!</div>';
+                container.innerHTML = '<div class="text-center text-gray-500 py-8 col-span-7">No stocks in this watchlist. Click "Add Stock" to get started!</div>';
                 return;
             }
 
@@ -455,7 +580,7 @@
 
         function createStockRow(ticker, stock) {
             const row = document.createElement('div');
-            row.className = 'grid grid-cols-6 gap-4 py-3 stock-row border-b border-gray-100 items-center';
+            row.className = 'grid grid-cols-7 gap-4 py-3 stock-row border-b border-gray-100 items-center';
 
             if (loadingTickers.has(ticker)) {
                 row.innerHTML = `
@@ -466,8 +591,9 @@
                         <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto"></div>
                     </div>
                     <div class="text-center">-</div>
+                    <div class="text-center">-</div>
                     <div class="text-center">
-                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700 delete-btn">
+                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700 delete-btn p-1 rounded" title="Remove ${ticker}">
                             <i data-lucide="x" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -482,8 +608,9 @@
                     <div class="text-center text-gray-500">Failed to load</div>
                     <div class="text-center text-gray-500">-</div>
                     <div class="text-center text-gray-500">-</div>
+                    <div class="text-center text-gray-500">-</div>
                     <div class="text-center">
-                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700 delete-btn">
+                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700 delete-btn p-1 rounded" title="Remove ${ticker}">
                             <i data-lucide="x" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -505,15 +632,49 @@
                     <i data-lucide="${changeIcon}" class="w-4 h-4"></i>
                     <span>${stock.change >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%</span>
                 </div>
-                <div class="text-center text-sm text-gray-500 flex items-center justify-between">
-                    <span>${stock.lastUpdated}</span>
-                    <button onclick="removeTicker('${stock.ticker}')" class="text-red-500 hover:text-red-700 ml-2 delete-btn" title="Remove ${stock.ticker}">
-                        <i data-lucide="x" class="w-4 h-4"></i>
+                <div class="text-center text-sm text-gray-500">${stock.lastUpdated}</div>
+                <div class="text-center">
+                    <button onclick="removeTicker('${stock.ticker}')" class="text-red-500 hover:text-red-700 delete-btn p-1 rounded hover:bg-red-50 transition-colors" title="Remove ${stock.ticker}">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>
             `;
 
             return row;
+        }
+
+        // Refresh all stocks
+        async function refreshAllStocks() {
+            const currentWatchlist = getCurrentWatchlist();
+            if (!currentWatchlist || currentWatchlist.tickers.length === 0) return;
+
+            showMessage('Refreshing all stocks...', 'success');
+            
+            // Add loading state to refresh button
+            const refreshBtn = document.getElementById('manual-refresh-btn');
+            const refreshIcon = refreshBtn.querySelector('i');
+            refreshIcon.classList.add('animate-spin');
+
+            for (const ticker of currentWatchlist.tickers) {
+                if (!loadingTickers.has(ticker)) {
+                    loadingTickers.add(ticker);
+                    updateStockRows();
+                    
+                    try {
+                        const data = await simulateApiCall(ticker);
+                        stockData = stockData.filter(s => s.ticker !== ticker);
+                        stockData.push(data);
+                    } catch (err) {
+                        console.error(`Failed to refresh ${ticker}:`, err);
+                    } finally {
+                        loadingTickers.delete(ticker);
+                    }
+                }
+            }
+            
+            updateStockRows();
+            refreshIcon.classList.remove('animate-spin');
+            refreshCountdown = 300; // Reset countdown
         }
 
         // Event handlers
@@ -544,6 +705,7 @@
             
             showMessage(`Watchlist "${name.trim()}" created successfully!`);
             updateUI();
+            startAutoRefresh();
             return true;
         }
 
@@ -560,6 +722,12 @@
                 
                 showMessage(`Watchlist "${currentWatchlist.name}" deleted successfully!`);
                 updateUI();
+                
+                if (currentWatchlistId) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
             }
         }
 
@@ -580,7 +748,6 @@
                 return false;
             }
 
-            // Update watchlist
             const updatedWatchlist = {
                 ...currentWatchlist,
                 tickers: [...currentWatchlist.tickers, ticker],
@@ -591,7 +758,6 @@
             saveWatchlistsToStorage();
             updateUI();
 
-            // Fetch stock data
             loadingTickers.add(ticker);
             updateStockRows();
 
@@ -610,7 +776,6 @@
             return true;
         }
 
-        // FIXED: Remove ticker function
         function removeTicker(ticker) {
             const currentWatchlist = getCurrentWatchlist();
             if (!currentWatchlist) return;
@@ -668,6 +833,7 @@
                         stockData = [];
                         loadingTickers.clear();
                         updateUI();
+                        startAutoRefresh();
                         showMessage('Watchlists imported successfully!');
                     } else {
                         showMessage('Invalid file format', 'error');
@@ -682,12 +848,16 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
-            // Load saved data
             watchlists = loadWatchlistsFromStorage();
             if (watchlists.length > 0) {
                 currentWatchlistId = watchlists[0].id;
             }
             updateUI();
+
+            // Start auto-refresh if there's a current watchlist
+            if (currentWatchlistId) {
+                startAutoRefresh();
+            }
 
             // Event listeners
             document.getElementById('watchlist-dropdown').addEventListener('change', function(e) {
@@ -696,27 +866,34 @@
                 loadingTickers.clear();
                 updateUI();
                 
-                // Load stock data for new watchlist
-                const currentWatchlist = getCurrentWatchlist();
-                if (currentWatchlist && currentWatchlist.tickers.length > 0) {
-                    currentWatchlist.tickers.forEach(async ticker => {
-                        loadingTickers.add(ticker);
-                        updateStockRows();
-                        try {
-                            const data = await simulateApiCall(ticker);
-                            stockData = stockData.filter(s => s.ticker !== ticker);
-                            stockData.push(data);
-                        } catch (err) {
-                            console.error(`Failed to fetch ${ticker}:`, err);
-                        } finally {
-                            loadingTickers.delete(ticker);
+                if (currentWatchlistId) {
+                    startAutoRefresh();
+                    const currentWatchlist = getCurrentWatchlist();
+                    if (currentWatchlist && currentWatchlist.tickers.length > 0) {
+                        currentWatchlist.tickers.forEach(async ticker => {
+                            loadingTickers.add(ticker);
                             updateStockRows();
-                        }
-                    });
+                            try {
+                                const data = await simulateApiCall(ticker);
+                                stockData = stockData.filter(s => s.ticker !== ticker);
+                                stockData.push(data);
+                            } catch (err) {
+                                console.error(`Failed to fetch ${ticker}:`, err);
+                            } finally {
+                                loadingTickers.delete(ticker);
+                                updateStockRows();
+                            }
+                        });
+                    }
+                } else {
+                    stopAutoRefresh();
                 }
             });
 
-            // Create New button
+            // Manual refresh button
+            document.getElementById('manual-refresh-btn').addEventListener('click', refreshAllStocks);
+
+            // Create watchlist modal
             document.getElementById('create-new-btn').addEventListener('click', function() {
                 document.getElementById('create-modal').classList.remove('hidden');
                 setTimeout(() => {
@@ -823,8 +1000,9 @@
             });
         });
 
-        // Make removeTicker globally available
+        // Make functions globally available
         window.removeTicker = removeTicker;
+        window.sortStocks = sortStocks;
     </script>
 </body>
 </html>
