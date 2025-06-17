@@ -365,9 +365,8 @@
                     bValue = bValue.toLowerCase();
                 }
 
-                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-                return 0;
+                const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+                return sortConfig.direction === 'asc' ? comparison : -comparison;
             });
 
             updateStockRows();
@@ -447,7 +446,8 @@
                 company = { ...company, market: forcedMarket };
             }
 
-            const volatility = Math.random() * 0.08 - 0.04;
+            // More realistic price changes (max 2% change)
+            const volatility = (Math.random() * 0.04 - 0.02);
             const price = company.basePrice * (1 + volatility);
             const change = price - company.basePrice;
             const changePercent = (change / company.basePrice) * 100;
