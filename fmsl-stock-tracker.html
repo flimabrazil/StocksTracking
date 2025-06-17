@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FMSL Stock Tracker - version test 1</title>
+    <title>FMSL Stock Tracker - version test 2</title>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -144,7 +144,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 FMSL Stock Tracker - version test 1</h1>
+        <h1>📊 FMSL Stock Tracker - version test 2</h1>
         
         <!-- Watchlist Management -->
         <div class="watchlist-header">
@@ -448,12 +448,23 @@
                         const response = await fetch(`${config.proxyUrl}/${stock.symbol}`);
                         if (!response.ok) throw new Error(`Failed to fetch data for ${stock.symbol}`);
                         const data = await response.json();
-                        
-                        if (data.price) {
-                            stock.price = data.price.regularMarketPrice || 0;
-                            stock.change = data.price.regularMarketChangePercent || 0;
-                            stock.lastUpdate = new Date();
+                        let price = 0;
+                        let change = 0;
+                        // Try to get price from data.price
+                        if (data.price && typeof data.price.regularMarketPrice === 'number') {
+                            price = data.price.regularMarketPrice;
+                            change = data.price.regularMarketChangePercent || 0;
+                        } else if (data.summaryDetail && typeof data.summaryDetail.previousClose === 'number') {
+                            // Fallback: use previousClose from summaryDetail
+                            price = data.summaryDetail.previousClose;
+                            change = 0; // No change info available
                         }
+                        if (!price) {
+                            console.warn(`No price found for ${stock.symbol}. Full response:`, data);
+                        }
+                        stock.price = price;
+                        stock.change = change;
+                        stock.lastUpdate = new Date();
                     } catch (error) {
                         console.error(`Error fetching data for ${stock.symbol}:`, error);
                     }
