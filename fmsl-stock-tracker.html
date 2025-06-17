@@ -1,407 +1,534 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FMSL Stock Tracker - v.T1</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f7f7fa;
-      margin: 0;
-      padding: 0;
-      color: #222;
-    }
-    .container {
-      max-width: 600px;
-      margin: 2rem auto;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-      padding: 2rem 2.5rem 2.5rem 2.5rem;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 1.5rem;
-      font-size: 2rem;
-      letter-spacing: 1px;
-    }
-    form {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
-      justify-content: center;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-    button, select, input[type="file"] {
-      padding: 0.5rem 0.9rem;
-      border-radius: 6px;
-      border: 1px solid #bbb;
-      background: #f2f2f7;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover, select:hover {
-      background: #e0e0eb;
-    }
-    .actions {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-      margin-bottom: 1rem;
-    }
-    th, td {
-      padding: 0.7rem 0.5rem;
-      text-align: left;
-    }
-    th {
-      background: #f2f2f7;
-      font-weight: 600;
-      border-bottom: 2px solid #e0e0eb;
-    }
-    tr {
-      transition: background 0.15s;
-    }
-    tr.dragging {
-      opacity: 0.5;
-      background: #e0e0eb;
-    }
-    tr:hover {
-      background: #f7f7fa;
-    }
-    .positive {
-      color: #1a8a34;
-      font-weight: 500;
-    }
-    .negative {
-      color: #c0392b;
-      font-weight: 500;
-    }
-    .remove-btn {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      color: #c0392b;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      transition: background 0.2s;
-    }
-    .remove-btn:hover {
-      background: #ffeaea;
-    }
-    .footer {
-      text-align: center;
-      color: #888;
-      font-size: 0.95rem;
-      margin-top: 1.5rem;
-    }
-    @media (max-width: 600px) {
-      .container {
-        padding: 1rem 0.5rem 1.5rem 0.5rem;
-      }
-      th, td {
-        padding: 0.5rem 0.2rem;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FMSL Stock Tracker</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f7f7fa;
+            margin: 0;
+            padding: 0;
+            color: #222;
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            padding: 2rem 2.5rem 2.5rem 2.5rem;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            letter-spacing: 1px;
+        }
+        .watchlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .watchlist-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        button, select, input[type="file"] {
+            padding: 0.5rem 0.9rem;
+            border-radius: 6px;
+            border: 1px solid #bbb;
+            background: #f2f2f7;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover, select:hover {
+            background: #e0e0eb;
+        }
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            margin-bottom: 1rem;
+        }
+        th, td {
+            padding: 0.7rem 0.5rem;
+            text-align: left;
+        }
+        th {
+            background: #f2f2f7;
+            font-weight: 600;
+            border-bottom: 2px solid #e0e0eb;
+            cursor: pointer;
+        }
+        th:hover {
+            background: #e0e0eb;
+        }
+        tr {
+            transition: background 0.15s;
+        }
+        tr.dragging {
+            opacity: 0.5;
+            background: #e0e0eb;
+        }
+        tr:hover {
+            background: #f7f7fa;
+        }
+        .positive {
+            color: #1a8a34;
+            font-weight: 500;
+        }
+        .negative {
+            color: #c0392b;
+            font-weight: 500;
+        }
+        .remove-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #c0392b;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .remove-btn:hover {
+            background: #ffeaea;
+        }
+        .footer {
+            text-align: center;
+            color: #888;
+            font-size: 0.95rem;
+            margin-top: 1.5rem;
+        }
+        .watchlist-select {
+            margin-bottom: 1rem;
+        }
+        .watchlist-select select {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 1.1rem;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem 0.5rem 1.5rem 0.5rem;
+            }
+            th, td {
+                padding: 0.5rem 0.2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📊 FMSL Stock Tracker - v.T1</h1>
-    <form id="addStockForm" autocomplete="off">
-      <input id="stockInput" type="text" placeholder="Add stock (e.g. PETR4, AAPL)" required />
-      <button type="submit">➕ Add</button>
-    </form>
-    <div class="actions">
-      <button id="refreshBtn" title="Refresh prices">🔄 Refresh</button>
-      <select id="sortSelect" title="Sort stocks">
-        <option value="symbol">Sort: Symbol</option>
-        <option value="price">Sort: Price</option>
-        <option value="change">Sort: Change %</option>
-      </select>
-      <input id="importInput" type="file" accept="application/json" style="display:none" />
-      <button onclick="document.getElementById('importInput').click()">📥 Import</button>
-      <button id="exportBtn">📤 Export</button>
+    <div class="container">
+        <h1>📊 FMSL Stock Tracker</h1>
+        
+        <!-- Watchlist Management -->
+        <div class="watchlist-header">
+            <div class="watchlist-actions">
+                <input type="text" id="newWatchlistInput" placeholder="New watchlist name" />
+                <button onclick="createWatchlist()">➕ New Watchlist</button>
+            </div>
+            <select id="watchlistSelect" onchange="switchWatchlist()">
+                <!-- Watchlists will be populated here -->
+            </select>
+            <button onclick="deleteWatchlist()" class="remove-btn">🗑️ Delete Watchlist</button>
+        </div>
+
+        <!-- Stock Management -->
+        <form id="addStockForm" autocomplete="off">
+            <input id="stockInput" type="text" placeholder="Add stock (e.g. PETR4, AAPL)" required />
+            <button type="submit">➕ Add</button>
+        </form>
+        
+        <div class="actions">
+            <button id="refreshBtn" title="Refresh prices">🔄 Refresh</button>
+            <select id="sortSelect" title="Sort stocks">
+                <option value="symbol">Sort: Symbol</option>
+                <option value="price">Sort: Price</option>
+                <option value="change">Sort: Change %</option>
+            </select>
+            <input id="importInput" type="file" accept="application/json" style="display:none" />
+            <button onclick="document.getElementById('importInput').click()">📥 Import</button>
+            <button id="exportBtn">📤 Export</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th onclick="sortTable('symbol')">Symbol ↕</th>
+                    <th onclick="sortTable('price')">Price ↕</th>
+                    <th onclick="sortTable('change')">Change ↕</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+            <tbody id="stockList">
+                <!-- Stocks will be rendered here -->
+            </tbody>
+        </table>
+
+        <div class="footer">
+            Last update: <span id="lastUpdate">-</span><br/>
+            <span style="font-size:0.9em;">Data via Yahoo Finance (using your local proxy)</span>
+        </div>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Symbol</th>
-          <th>Price</th>
-          <th>Change</th>
-          <th>Remove</th>
-        </tr>
-      </thead>
-      <tbody id="stockList">
-        <!-- Stocks will be rendered here -->
-      </tbody>
-    </table>
-    <div class="footer">
-      Last update: <span id="lastUpdate">-</span><br/>
-      <span style="font-size:0.9em;">Data via Yahoo Finance (using your local proxy)</span>
-    </div>
-  </div>
-  <script>
-    // Configuration
-    const config = {
-      proxyUrl: 'http://localhost:3000/proxy',
-      updateInterval: 30000, // 30 seconds
-      defaultStocks: ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'ABEV3.SA']
-    };
 
-    // State
-    let stocks = [];
-    let lastUpdate = null;
-    let isUpdating = false;
-    let dragSource = null;
+    <script>
+        // Configuration
+        const config = {
+            proxyUrl: 'http://localhost:3000/proxy',
+            updateInterval: 300000, // 5 minutes
+            defaultStocks: ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'ABEV3.SA']
+        };
 
-    // DOM Elements
-    const stockList = document.getElementById('stockList');
-    const addStockForm = document.getElementById('addStockForm');
-    const stockInput = document.getElementById('stockInput');
-    const lastUpdateSpan = document.getElementById('lastUpdate');
-    const importInput = document.getElementById('importInput');
-    const exportBtn = document.getElementById('exportBtn');
-    const sortSelect = document.getElementById('sortSelect');
-    const refreshBtn = document.getElementById('refreshBtn');
+        // State
+        let watchlists = {};
+        let currentWatchlist = null;
+        let stocks = [];
+        let lastUpdate = null;
+        let isUpdating = false;
+        let dragSource = null;
+        let sortDirection = {};
 
-    // Initialize
-    function init() {
-      loadStocks();
-      setupEventListeners();
-      startAutoUpdate();
-    }
+        // DOM Elements
+        const stockList = document.getElementById('stockList');
+        const addStockForm = document.getElementById('addStockForm');
+        const stockInput = document.getElementById('stockInput');
+        const lastUpdateSpan = document.getElementById('lastUpdate');
+        const importInput = document.getElementById('importInput');
+        const exportBtn = document.getElementById('exportBtn');
+        const sortSelect = document.getElementById('sortSelect');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const watchlistSelect = document.getElementById('watchlistSelect');
+        const newWatchlistInput = document.getElementById('newWatchlistInput');
 
-    // Load stocks from localStorage or use defaults
-    function loadStocks() {
-      const savedStocks = localStorage.getItem('stocks');
-      stocks = savedStocks ? JSON.parse(savedStocks) : config.defaultStocks.map(symbol => ({
-        symbol,
-        price: 0,
-        change: 0,
-        lastUpdate: null
-      }));
-      renderStocks();
-      updatePrices();
-    }
+        // Initialize
+        function init() {
+            loadWatchlists();
+            setupEventListeners();
+            startAutoUpdate();
+        }
 
-    // Save stocks to localStorage
-    function saveStocks() {
-      localStorage.setItem('stocks', JSON.stringify(stocks));
-    }
-
-    // Setup event listeners
-    function setupEventListeners() {
-      addStockForm.addEventListener('submit', handleAddStock);
-      importInput.addEventListener('change', handleImport);
-      exportBtn.addEventListener('click', handleExport);
-      sortSelect.addEventListener('change', handleSort);
-      refreshBtn.addEventListener('click', () => updatePrices(true));
-    }
-
-    // Start auto-update interval
-    function startAutoUpdate() {
-      setInterval(() => updatePrices(), config.updateInterval);
-    }
-
-    // Handle add stock form submission
-    function handleAddStock(e) {
-      e.preventDefault();
-      const symbol = stockInput.value.trim().toUpperCase();
-      if (!symbol) return;
-
-      // Add .SA suffix if it's a B3 stock (4 or 5 characters + number)
-      const formattedSymbol = /^[A-Z]{4,5}\\d$/.test(symbol) ? `${symbol}.SA` : symbol;
-
-      if (!stocks.some(s => s.symbol === formattedSymbol)) {
-        stocks.push({
-          symbol: formattedSymbol,
-          price: 0,
-          change: 0,
-          lastUpdate: null
-        });
-        saveStocks();
-        renderStocks();
-        updatePrices();
-      }
-      stockInput.value = '';
-    }
-
-    // Handle import
-    function handleImport(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const importedStocks = JSON.parse(event.target.result);
-          if (Array.isArray(importedStocks)) {
-            stocks = importedStocks.map(symbol => ({
-              symbol: typeof symbol === 'string' ? symbol : symbol.symbol,
-              price: 0,
-              change: 0,
-              lastUpdate: null
-            }));
-            saveStocks();
+        // Load watchlists from localStorage
+        function loadWatchlists() {
+            const savedWatchlists = localStorage.getItem('watchlists');
+            watchlists = savedWatchlists ? JSON.parse(savedWatchlists) : {
+                'Default': config.defaultStocks.map(symbol => ({
+                    symbol,
+                    price: 0,
+                    change: 0,
+                    lastUpdate: null
+                }))
+            };
+            
+            // Populate watchlist select
+            watchlistSelect.innerHTML = Object.keys(watchlists)
+                .map(name => `<option value="${name}">${name}</option>`)
+                .join('');
+            
+            // Set current watchlist
+            currentWatchlist = Object.keys(watchlists)[0];
+            stocks = watchlists[currentWatchlist];
             renderStocks();
             updatePrices();
-          }
-        } catch (error) {
-          console.error('Error importing stocks:', error);
-          alert('Error importing stocks. Please check the file format.');
         }
-      };
-      reader.readAsText(file);
-      importInput.value = '';
-    }
 
-    // Handle export
-    function handleExport() {
-      const data = JSON.stringify(stocks.map(s => s.symbol), null, 2);
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'stocks.json';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
+        // Save watchlists to localStorage
+        function saveWatchlists() {
+            localStorage.setItem('watchlists', JSON.stringify(watchlists));
+        }
 
-    // Handle sort change
-    function handleSort() {
-      const sortBy = sortSelect.value;
-      switch (sortBy) {
-        case 'symbol':
-          stocks.sort((a, b) => a.symbol.localeCompare(b.symbol));
-          break;
-        case 'price':
-          stocks.sort((a, b) => b.price - a.price);
-          break;
-        case 'change':
-          stocks.sort((a, b) => b.change - a.change);
-          break;
-      }
-      renderStocks();
-    }
-
-    // Update stock prices
-    async function updatePrices(force = false) {
-      if (isUpdating && !force) return;
-      isUpdating = true;
-
-      try {
-        const symbols = stocks.map(s => s.symbol).join(',');
-        const response = await fetch(`${config.proxyUrl}?symbols=${symbols}`);
-        if (!response.ok) throw new Error('Failed to fetch stock data');
-        const data = await response.json();
-
-        if (data.quoteResponse && data.quoteResponse.result) {
-          const quotes = data.quoteResponse.result;
-          quotes.forEach(quote => {
-            const stock = stocks.find(s => s.symbol === quote.symbol);
-            if (stock) {
-              stock.price = quote.regularMarketPrice;
-              stock.change = quote.regularMarketChangePercent;
-              stock.lastUpdate = new Date();
+        // Create new watchlist
+        function createWatchlist() {
+            const name = newWatchlistInput.value.trim();
+            if (!name) return;
+            
+            if (watchlists[name]) {
+                alert('Watchlist already exists!');
+                return;
             }
-          });
+
+            watchlists[name] = [];
+            saveWatchlists();
+            
+            // Update select and switch to new watchlist
+            const option = document.createElement('option');
+            option.value = name;
+            option.text = name;
+            watchlistSelect.appendChild(option);
+            watchlistSelect.value = name;
+            
+            currentWatchlist = name;
+            stocks = watchlists[name];
+            newWatchlistInput.value = '';
+            renderStocks();
         }
 
-        lastUpdate = new Date();
-        lastUpdateSpan.textContent = lastUpdate.toLocaleTimeString();
-        renderStocks();
-        saveStocks();
-      } catch (error) {
-        console.error('Error updating prices:', error);
-      } finally {
-        isUpdating = false;
-      }
-    }
+        // Delete current watchlist
+        function deleteWatchlist() {
+            if (Object.keys(watchlists).length <= 1) {
+                alert('Cannot delete the last watchlist!');
+                return;
+            }
 
-    // Render stocks
-    function renderStocks() {
-      stockList.innerHTML = '';
-      stocks.forEach((stock, index) => {
-        const row = document.createElement('tr');
-        row.draggable = true;
-        row.dataset.index = index;
+            if (confirm(`Are you sure you want to delete the watchlist "${currentWatchlist}"?`)) {
+                delete watchlists[currentWatchlist];
+                saveWatchlists();
+                
+                // Update select and switch to first available watchlist
+                watchlistSelect.remove(watchlistSelect.selectedIndex);
+                currentWatchlist = Object.keys(watchlists)[0];
+                watchlistSelect.value = currentWatchlist;
+                
+                stocks = watchlists[currentWatchlist];
+                renderStocks();
+            }
+        }
 
-        row.innerHTML = `
-          <td>${stock.symbol}</td>
-          <td>R$ ${stock.price.toFixed(2)}</td>
-          <td class="${stock.change >= 0 ? 'positive' : 'negative'}">
-            ${stock.change >= 0 ? '📈' : '📉'} ${stock.change.toFixed(2)}%
-          </td>
-          <td>
-            <button class="remove-btn" onclick="removeStock(${index})">❌</button>
-          </td>
-        `;
+        // Switch watchlist
+        function switchWatchlist() {
+            currentWatchlist = watchlistSelect.value;
+            stocks = watchlists[currentWatchlist];
+            renderStocks();
+        }
 
-        // Drag and drop events
-        row.addEventListener('dragstart', handleDragStart);
-        row.addEventListener('dragover', handleDragOver);
-        row.addEventListener('drop', handleDrop);
-        row.addEventListener('dragend', handleDragEnd);
+        // Setup event listeners
+        function setupEventListeners() {
+            addStockForm.addEventListener('submit', handleAddStock);
+            importInput.addEventListener('change', handleImport);
+            exportBtn.addEventListener('click', handleExport);
+            sortSelect.addEventListener('change', handleSort);
+            refreshBtn.addEventListener('click', () => updatePrices(true));
+        }
 
-        stockList.appendChild(row);
-      });
-    }
+        // Start auto-update interval
+        function startAutoUpdate() {
+            setInterval(() => updatePrices(), config.updateInterval);
+        }
 
-    // Remove stock
-    window.removeStock = function(index) {
-      stocks.splice(index, 1);
-      saveStocks();
-      renderStocks();
-    }
+        // Handle add stock form submission
+        function handleAddStock(e) {
+            e.preventDefault();
+            const symbol = stockInput.value.trim().toUpperCase();
+            if (!symbol) return;
 
-    // Drag and drop handlers
-    function handleDragStart(e) {
-      dragSource = this;
-      this.classList.add('dragging');
-    }
+            // Add .SA suffix if it's a B3 stock (4 or 5 characters + number)
+            const formattedSymbol = /^[A-Z]{4,5}\d$/.test(symbol) ? `${symbol}.SA` : symbol;
 
-    function handleDragOver(e) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-    }
+            if (!stocks.some(s => s.symbol === formattedSymbol)) {
+                stocks.push({
+                    symbol: formattedSymbol,
+                    price: 0,
+                    change: 0,
+                    lastUpdate: null
+                });
+                saveWatchlists();
+                renderStocks();
+                updatePrices();
+            }
+            stockInput.value = '';
+        }
 
-    function handleDrop(e) {
-      e.preventDefault();
-      if (dragSource !== this) {
-        const sourceIndex = parseInt(dragSource.dataset.index);
-        const targetIndex = parseInt(this.dataset.index);
-        const [removed] = stocks.splice(sourceIndex, 1);
-        stocks.splice(targetIndex, 0, removed);
-        saveStocks();
-        renderStocks();
-      }
-    }
+        // Handle import
+        function handleImport(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-    function handleDragEnd() {
-      this.classList.remove('dragging');
-      dragSource = null;
-    }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const importedStocks = JSON.parse(event.target.result);
+                    if (Array.isArray(importedStocks)) {
+                        stocks = importedStocks.map(symbol => ({
+                            symbol: typeof symbol === 'string' ? symbol : symbol.symbol,
+                            price: 0,
+                            change: 0,
+                            lastUpdate: null
+                        }));
+                        saveWatchlists();
+                        renderStocks();
+                        updatePrices();
+                    }
+                } catch (error) {
+                    console.error('Error importing stocks:', error);
+                    alert('Error importing stocks. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+            importInput.value = '';
+        }
 
-    // Initialize the app
-    init();
-  </script>
+        // Handle export
+        function handleExport() {
+            const data = JSON.stringify(stocks.map(s => s.symbol), null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentWatchlist}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Handle sort change
+        function handleSort() {
+            const sortBy = sortSelect.value;
+            sortTable(sortBy);
+        }
+
+        // Sort table by column
+        function sortTable(column) {
+            if (!sortDirection[column]) {
+                sortDirection[column] = 1;
+            } else {
+                sortDirection[column] *= -1;
+            }
+
+            stocks.sort((a, b) => {
+                let comparison = 0;
+                switch (column) {
+                    case 'symbol':
+                        comparison = a.symbol.localeCompare(b.symbol);
+                        break;
+                    case 'price':
+                        comparison = a.price - b.price;
+                        break;
+                    case 'change':
+                        comparison = a.change - b.change;
+                        break;
+                }
+                return comparison * sortDirection[column];
+            });
+
+            saveWatchlists();
+            renderStocks();
+        }
+
+        // Update stock prices
+        async function updatePrices(force = false) {
+            if (isUpdating && !force) return;
+            isUpdating = true;
+
+            try {
+                const symbols = stocks.map(s => s.symbol).join(',');
+                const response = await fetch(`${config.proxyUrl}?symbols=${symbols}`);
+                if (!response.ok) throw new Error('Failed to fetch stock data');
+                const data = await response.json();
+
+                if (data.quoteResponse && data.quoteResponse.result) {
+                    const quotes = data.quoteResponse.result;
+                    quotes.forEach(quote => {
+                        const stock = stocks.find(s => s.symbol === quote.symbol);
+                        if (stock) {
+                            stock.price = quote.regularMarketPrice;
+                            stock.change = quote.regularMarketChangePercent;
+                            stock.lastUpdate = new Date();
+                        }
+                    });
+                }
+
+                lastUpdate = new Date();
+                lastUpdateSpan.textContent = lastUpdate.toLocaleTimeString();
+                saveWatchlists();
+                renderStocks();
+            } catch (error) {
+                console.error('Error updating prices:', error);
+            } finally {
+                isUpdating = false;
+            }
+        }
+
+        // Render stocks
+        function renderStocks() {
+            stockList.innerHTML = '';
+            stocks.forEach((stock, index) => {
+                const row = document.createElement('tr');
+                row.draggable = true;
+                row.dataset.index = index;
+
+                row.innerHTML = `
+                    <td>${stock.symbol}</td>
+                    <td>R$ ${stock.price.toFixed(2)}</td>
+                    <td class="${stock.change >= 0 ? 'positive' : 'negative'}">
+                        ${stock.change >= 0 ? '📈' : '📉'} ${stock.change.toFixed(2)}%
+                    </td>
+                    <td>
+                        <button class="remove-btn" onclick="removeStock(${index})">❌</button>
+                    </td>
+                `;
+
+                // Drag and drop events
+                row.addEventListener('dragstart', handleDragStart);
+                row.addEventListener('dragover', handleDragOver);
+                row.addEventListener('drop', handleDrop);
+                row.addEventListener('dragend', handleDragEnd);
+
+                stockList.appendChild(row);
+            });
+        }
+
+        // Remove stock
+        window.removeStock = function(index) {
+            stocks.splice(index, 1);
+            saveWatchlists();
+            renderStocks();
+        }
+
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            dragSource = this;
+            this.classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            if (dragSource !== this) {
+                const sourceIndex = parseInt(dragSource.dataset.index);
+                const targetIndex = parseInt(this.dataset.index);
+                const [removed] = stocks.splice(sourceIndex, 1);
+                stocks.splice(targetIndex, 0, removed);
+                saveWatchlists();
+                renderStocks();
+            }
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            dragSource = null;
+        }
+
+        // Initialize the app
+        init();
+    </script>
 </body>
 </html>
