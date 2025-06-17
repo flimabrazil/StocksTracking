@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FMSL Stock Tracker - version test 4</title>
+  <title>FMSL Stock Tracker - version test 5</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -144,7 +144,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>📊 FMSL Stock Tracker - version test 4</h1>
+    <h1>📊 FMSL Stock Tracker - version test 5</h1>
     <!-- Watchlist Management -->
     <div class="watchlist-header">
       <div class="watchlist-actions">
@@ -413,18 +413,21 @@
       renderStocks();
     }
 
-    // Update stock prices (throttled, error-aware)
+    // Update stock prices with retry logic for failed tickers
     async function updatePrices(force = false) {
       if (isUpdating && !force) return;
       isUpdating = true;
       try {
-        const batchSize = 2; // Number of stocks to fetch in parallel
-        const delay = 500;   // ms between batches
+        const batchSize = 2;
+        const delay = 500;
+        const maxAttempts = 3;
         // Clear previous errors
-        stocks.forEach(stock => stock.error = null);
-        for (let i = 0; i < stocks.length; i += batchSize) {
-          const batch = stocks.slice(i, i + batchSize);
+        stocks.forEach(stock => { stock.error = null; stock._attempts = 0; });
+
+        // Helper to fetch a batch and mark errors
+        async function fetchBatch(batch) {
           await Promise.all(batch.map(async (stock) => {
+            stock._attempts++;
             try {
               const response = await fetch(`${config.proxyUrl}/${stock.symbol}`);
               if (!response.ok) throw new Error(`Failed to fetch data for ${stock.symbol}`);
@@ -441,6 +444,8 @@
               if (!price) {
                 stock.error = "No price found";
                 console.warn(`No price found for ${stock.symbol}. Full response:`, data);
+              } else {
+                stock.error = null;
               }
               stock.price = price;
               stock.change = change;
@@ -450,11 +455,28 @@
               console.error(`Error fetching data for ${stock.symbol}:`, error);
             }
           }));
-          // Wait before next batch
-          if (i + batchSize < stocks.length) {
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
         }
+
+        // Main retry loop
+        let attempt = 1;
+        let toFetch = stocks.slice();
+        while (attempt <= maxAttempts && toFetch.length > 0) {
+          for (let i = 0; i < toFetch.length; i += batchSize) {
+            const batch = toFetch.slice(i, i + batchSize);
+            await fetchBatch(batch);
+            if (i + batchSize < toFetch.length) {
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+          }
+          // Filter for stocks that still have errors and haven't exceeded max attempts
+          toFetch = stocks.filter(s => s.error && s._attempts < maxAttempts);
+          if (toFetch.length > 0) {
+            // Wait a bit longer before retrying
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+          attempt++;
+        }
+
         lastUpdate = new Date();
         lastUpdateSpan.textContent = lastUpdate.toLocaleTimeString();
         saveWatchlists();
@@ -464,6 +486,8 @@
         alert('Error fetching stock data. Please check your proxy connection and try again.');
       } finally {
         isUpdating = false;
+        // Clean up attempts
+        stocks.forEach(stock => { delete stock._attempts; });
       }
     }
 
