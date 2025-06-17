@@ -335,8 +335,8 @@
             const symbol = stockInput.value.trim().toUpperCase();
             if (!symbol) return;
 
-            // Add .SA suffix if it's a B3 stock (4 or 5 characters + number)
-            const formattedSymbol = /^[A-Z]{4,5}\d$/.test(symbol) ? `${symbol}.SA` : symbol;
+            // Add .SA suffix for B3 stocks (3-5 characters + number)
+            const formattedSymbol = /^[A-Z]{3,5}\d$/.test(symbol) ? `${symbol}.SA` : symbol;
 
             if (!stocks.some(s => s.symbol === formattedSymbol)) {
                 stocks.push({
@@ -362,12 +362,17 @@
                 try {
                     const importedStocks = JSON.parse(event.target.result);
                     if (Array.isArray(importedStocks)) {
-                        stocks = importedStocks.map(symbol => ({
-                            symbol: typeof symbol === 'string' ? symbol : symbol.symbol,
-                            price: 0,
-                            change: 0,
-                            lastUpdate: null
-                        }));
+                        stocks = importedStocks.map(symbol => {
+                            const sym = typeof symbol === 'string' ? symbol : symbol.symbol;
+                            // Add .SA suffix for B3 stocks (3-5 characters + number)
+                            const formattedSymbol = /^[A-Z]{3,5}\d$/.test(sym) ? `${sym}.SA` : sym;
+                            return {
+                                symbol: formattedSymbol,
+                                price: 0,
+                                change: 0,
+                                lastUpdate: null
+                            };
+                        });
                         saveWatchlists();
                         renderStocks();
                         updatePrices();
@@ -445,8 +450,9 @@
                     quotes.forEach(quote => {
                         const stock = stocks.find(s => s.symbol === quote.symbol);
                         if (stock) {
-                            stock.price = quote.regularMarketPrice;
-                            stock.change = quote.regularMarketChangePercent;
+                            // Use real data from Yahoo Finance
+                            stock.price = quote.regularMarketPrice || 0;
+                            stock.change = quote.regularMarketChangePercent || 0;
                             stock.lastUpdate = new Date();
                         }
                     });
@@ -458,6 +464,7 @@
                 renderStocks();
             } catch (error) {
                 console.error('Error updating prices:', error);
+                alert('Error fetching stock data. Please check your proxy connection.');
             } finally {
                 isUpdating = false;
             }
