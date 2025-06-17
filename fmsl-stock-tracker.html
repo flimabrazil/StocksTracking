@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FMSL Stock Tracker v.c6</title>
+    <title>FMSL Stock Tracker v.c7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
@@ -68,7 +68,7 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.c6</h1>
+            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.c7</h1>
             <div class="flex items-center space-x-4">
                 <div id="auto-refresh-status" class="text-sm text-gray-500 flex items-center space-x-2">
                     <i data-lucide="clock" class="w-4 h-4"></i>
@@ -706,28 +706,29 @@
             saveWatchlistsToStorage();
         }
 
-        // Helper to get Finnhub symbol
-        function getFinnhubSymbol(ticker, market) {
+        // Helper to get Yahoo Finance symbol
+        function getYahooSymbol(ticker, market) {
             if (market === 'B3') return ticker + '.SA';
+            if (market === 'XETRA') return ticker + '.DE';
             // Add more rules for other markets if needed
             return ticker;
         }
 
-        // Finnhub API integration
-        async function fetchFinnhubQuote(ticker, market) {
-            if (!FINNHUB_API_KEY) throw new Error('No Finnhub API key set');
-            const symbol = getFinnhubSymbol(ticker, market);
-            const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`;
+        // Yahoo Finance API integration (unofficial)
+        async function fetchYahooQuote(ticker, market) {
+            const symbol = getYahooSymbol(ticker, market);
+            const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Failed to fetch from Finnhub');
+            if (!response.ok) throw new Error('Failed to fetch from Yahoo Finance');
             const data = await response.json();
-            if (!data.c || !data.pc) throw new Error('No data for this ticker');
+            const quote = data.quoteResponse.result[0];
+            if (!quote) throw new Error('No data for this ticker');
             return {
                 ticker: ticker,
-                name: ticker,
-                price: data.c,
-                change: data.c - data.pc,
-                changePercent: ((data.c - data.pc) / data.pc) * 100,
+                name: quote.shortName || ticker,
+                price: quote.regularMarketPrice,
+                change: quote.regularMarketChange,
+                changePercent: quote.regularMarketChangePercent,
                 market: market,
                 lastUpdated: new Date().toLocaleTimeString(),
             };
@@ -752,11 +753,7 @@
                     try {
                         let data;
                         const market = detectMarketFromTicker(ticker);
-                        if (FINNHUB_API_KEY) {
-                            data = await fetchFinnhubQuote(ticker, market);
-                        } else {
-                            data = await simulateApiCall(ticker);
-                        }
+                        data = await fetchYahooQuote(ticker, market);
                         stockData = stockData.filter(s => s.ticker !== ticker);
                         stockData.push(data);
                     } catch (err) {
@@ -858,11 +855,7 @@
 
             try {
                 let data;
-                if (FINNHUB_API_KEY) {
-                    data = await fetchFinnhubQuote(ticker, market);
-                } else {
-                    data = await simulateApiCall(ticker, market);
-                }
+                data = await fetchYahooQuote(ticker, market);
                 stockData = stockData.filter(s => s.ticker !== ticker);
                 stockData.push(data);
                 showMessage(`${ticker} added successfully!`);
