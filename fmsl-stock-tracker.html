@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FMSL Stock Tracker v.c5</title>
+    <title>FMSL Stock Tracker v.c6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
@@ -68,7 +68,7 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.c5</h1>
+            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.c6</h1>
             <div class="flex items-center space-x-4">
                 <div id="auto-refresh-status" class="text-sm text-gray-500 flex items-center space-x-2">
                     <i data-lucide="clock" class="w-4 h-4"></i>
@@ -706,21 +706,29 @@
             saveWatchlistsToStorage();
         }
 
+        // Helper to get Finnhub symbol
+        function getFinnhubSymbol(ticker, market) {
+            if (market === 'B3') return ticker + '.SA';
+            // Add more rules for other markets if needed
+            return ticker;
+        }
+
         // Finnhub API integration
-        async function fetchFinnhubQuote(ticker) {
+        async function fetchFinnhubQuote(ticker, market) {
             if (!FINNHUB_API_KEY) throw new Error('No Finnhub API key set');
-            const url = `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`;
+            const symbol = getFinnhubSymbol(ticker, market);
+            const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to fetch from Finnhub');
             const data = await response.json();
-            if (!data.c || !data.pc) throw new Error('Invalid data from Finnhub');
+            if (!data.c || !data.pc) throw new Error('No data for this ticker');
             return {
                 ticker: ticker,
-                name: ticker, // You can enhance this with a lookup if needed
+                name: ticker,
                 price: data.c,
                 change: data.c - data.pc,
                 changePercent: ((data.c - data.pc) / data.pc) * 100,
-                market: detectMarketFromTicker(ticker),
+                market: market,
                 lastUpdated: new Date().toLocaleTimeString(),
             };
         }
@@ -743,8 +751,9 @@
                     updateStockRows();
                     try {
                         let data;
+                        const market = detectMarketFromTicker(ticker);
                         if (FINNHUB_API_KEY) {
-                            data = await fetchFinnhubQuote(ticker);
+                            data = await fetchFinnhubQuote(ticker, market);
                         } else {
                             data = await simulateApiCall(ticker);
                         }
@@ -850,7 +859,7 @@
             try {
                 let data;
                 if (FINNHUB_API_KEY) {
-                    data = await fetchFinnhubQuote(ticker);
+                    data = await fetchFinnhubQuote(ticker, market);
                 } else {
                     data = await simulateApiCall(ticker, market);
                 }
@@ -858,7 +867,7 @@
                 stockData.push(data);
                 showMessage(`${ticker} added successfully!`);
             } catch (err) {
-                showMessage(`Failed to fetch data for ${ticker}`, 'error');
+                showMessage(`Failed to fetch data for ${ticker}: ${err.message}`, 'error');
             } finally {
                 loadingTickers.delete(ticker);
                 updateStockRows();
