@@ -82,15 +82,47 @@
 
         // Mock Data (replace with actual API calls later)
         const MOCK_COMPANIES = {
-            AAPL: { name: "Apple Inc.", market: "NASDAQ", basePrice: 175 },
-            GOOGL: { name: "Alphabet Inc.", market: "NASDAQ", basePrice: 2700 },
-            MSFT: { name: "Microsoft Corp.", market: "NASDAQ", basePrice: 300 },
-            AMZN: { name: "Amazon.com Inc.", market: "NASDAQ", basePrice: 3300 },
-            TSLA: { name: "Tesla, Inc.", market: "NASDAQ", basePrice: 700 },
-            ITSA3: { name: "Itaúsa S.A.", market: "B3", basePrice: 10 },
-            VALE3: { name: "Vale S.A.", market: "B3", basePrice: 80 },
-            PETR4: { name: "Petróleo Brasileiro S.A.", market: "B3", basePrice: 30 },
-        };
+    AAPL: { name: "Apple Inc.", market: "NASDAQ", basePrice: 175 },
+    GOOGL: { name: "Alphabet Inc.", market: "NASDAQ", basePrice: 140 },
+    MSFT: { name: "Microsoft Corporation", market: "NASDAQ", basePrice: 380 },
+    TSLA: { name: "Tesla, Inc.", market: "NASDAQ", basePrice: 250 },
+    AMZN: { name: "Amazon.com, Inc.", market: "NASDAQ", basePrice: 145 },
+    NVDA: { name: "NVIDIA Corporation", market: "NASDAQ", basePrice: 480 },
+    META: { name: "Meta Platforms, Inc.", market: "NASDAQ", basePrice: 320 },
+    "BRK.B": { name: "Berkshire Hathaway Inc.", market: "NYSE", basePrice: 420 },
+    JPM: { name: "JPMorgan Chase & Co", market: "NYSE", basePrice: 155 },
+    JNJ: { name: "Johnson & Johnson", market: "NYSE", basePrice: 165 },
+    BAC: { name: "Bank of America Corp", market: "NYSE", basePrice: 32 },
+    WMT: { name: "Walmart Inc.", market: "NYSE", basePrice: 165 },
+    PG: { name: "Procter & Gamble Co", market: "NYSE", basePrice: 155 },
+    HD: { name: "Home Depot Inc", market: "NYSE", basePrice: 340 },
+    DIS: { name: "Walt Disney Co", market: "NYSE", basePrice: 95 },
+    
+    // Brazilian stocks (B3) - Expanded list
+    ITSA3: { name: "Itaúsa", market: "B3", basePrice: 9.5 },
+    ITSA4: { name: "Itaúsa", market: "B3", basePrice: 9.8 },
+    PETR3: { name: "Petrobras", market: "B3", basePrice: 35.8 },
+    PETR4: { name: "Petrobras", market: "B3", basePrice: 36.2 },
+    VALE3: { name: "Vale", market: "B3", basePrice: 67.2 },
+    BBDC4: { name: "Banco Bradesco", market: "B3", basePrice: 14.3 },
+    ABEV3: { name: "Ambev", market: "B3", basePrice: 13.7 },
+    ITUB4: { name: "Itaú Unibanco", market: "B3", basePrice: 32.5 },
+    MGLU3: { name: "Magazine Luiza", market: "B3", basePrice: 2.1 },
+    B3SA3: { name: "B3", market: "B3", basePrice: 12.8 },
+    BBA3: { name: "Banco da Amazônia", market: "B3", basePrice: 15.2 },
+    BB5E3: { name: "BB Seguridade", market: "B3", basePrice: 28.5 },
+    CXSE3: { name: "Caixa Seguridade", market: "B3", basePrice: 8.9 },
+    ISAE4: { name: "Isa Cteep", market: "B3", basePrice: 11.4 },
+    
+    // European stocks
+    "SAP.DE": { name: "SAP SE", market: "XETRA", basePrice: 178.5 },
+    "BAYN.DE": { name: "Bayer AG", market: "XETRA", basePrice: 28.4 },
+    
+    // Asian stocks
+    "7203.T": { name: "Toyota Motor Corp", market: "TSE", basePrice: 2850 },
+    "9984.T": { name: "SoftBank Group", market: "TSE", basePrice: 6200 },
+    "005930.KS": { name: "Samsung Electronics", market: "KRX", basePrice: 72000 },
+};
 
         // Local Storage Management
         function getWatchlists() {
@@ -381,23 +413,52 @@
     });
 }
 
-        function generateMockStockData(ticker, forcedMarket = null) {
+        function generateMockStockData(ticker) {
     const upperTicker = ticker.toUpperCase();
     let company = MOCK_COMPANIES[upperTicker];
     
-    // If not found in our database and no forced market, try to auto-detect
-    if (!company && !forcedMarket) {
-        company = autoDetectMarket(upperTicker);
-    } else if (!company) {
-        // Use forced market with default values
-        company = {
-            name: `${upperTicker} Corporation`,
-            market: forcedMarket,
-            basePrice: getDefaultPriceForMarket(forcedMarket),
-        };
-    } else if (forcedMarket && forcedMarket !== 'auto') {
-        // Override the market if user specified one
-        company = { ...company, market: forcedMarket };
+    // If not found in our database, try to auto-detect based on patterns
+    if (!company) {
+        // Brazilian stocks typically end with numbers (3, 4, 5, 6, 11)
+        if (/[3-6]$|11$/.test(upperTicker)) {
+            company = {
+                name: `${upperTicker.replace(/[3-6]$|11$/, '')} S.A.`,
+                market: 'B3',
+                basePrice: Math.random() * 40 + 5, // R$5-45 range for Brazilian stocks
+            };
+        }
+        // German stocks often have .DE suffix
+        else if (upperTicker.includes('.DE')) {
+            company = {
+                name: `${upperTicker.replace('.DE', '')} AG`,
+                market: 'XETRA',
+                basePrice: Math.random() * 200 + 50,
+            };
+        }
+        // Japanese stocks often have .T suffix
+        else if (upperTicker.includes('.T')) {
+            company = {
+                name: `${upperTicker.replace('.T', '')} Corp`,
+                market: 'TSE',
+                basePrice: Math.random() * 5000 + 1000,
+            };
+        }
+        // Korean stocks often have .KS suffix
+        else if (upperTicker.includes('.KS')) {
+            company = {
+                name: `${upperTicker.replace('.KS', '')} Co Ltd`,
+                market: 'KRX',
+                basePrice: Math.random() * 100000 + 10000,
+            };
+        }
+        // Default to NYSE for unknown tickers
+        else {
+            company = {
+                name: `${upperTicker} Corporation`,
+                market: 'NYSE',
+                basePrice: Math.random() * 300 + 50,
+            };
+        }
     }
 
     const volatility = Math.random() * 0.1 - 0.05; // -5% to +5%
@@ -413,52 +474,6 @@
         changePercent: Number(changePercent.toFixed(2)),
         market: company.market,
         lastUpdated: new Date().toLocaleTimeString(),
-    };
-}
-
-// Auto-detect market based on ticker patterns
-function autoDetectMarket(ticker) {
-    // Brazilian stocks typically end with numbers
-    if (/\d$/.test(ticker)) {
-        return {
-            name: `${ticker} S.A.`,
-            market: 'B3',
-            basePrice: Math.random() * 50 + 5, // R$5-55 range
-        };
-    }
-    
-    // German stocks often have .DE suffix
-    if (ticker.includes('.DE')) {
-        return {
-            name: `${ticker.replace('.DE', '')} AG`,
-            market: 'XETRA',
-            basePrice: Math.random() * 200 + 50, // €50-250 range
-        };
-    }
-    
-    // Japanese stocks often have .T suffix
-    if (ticker.includes('.T')) {
-        return {
-            name: `${ticker.replace('.T', '')} Corp`,
-            market: 'TSE',
-            basePrice: Math.random() * 5000 + 1000, // ¥1000-6000 range
-        };
-    }
-    
-    // Korean stocks often have .KS suffix
-    if (ticker.includes('.KS')) {
-        return {
-            name: `${ticker.replace('.KS', '')} Co Ltd`,
-            market: 'KRX',
-            basePrice: Math.random() * 100000 + 10000, // ₩10000-110000 range
-        };
-    }
-    
-    // Default to NYSE for unknown tickers
-    return {
-        name: `${ticker} Corporation`,
-        market: 'NYSE',
-        basePrice: Math.random() * 300 + 50, // $50-350 range
     };
 }
 
