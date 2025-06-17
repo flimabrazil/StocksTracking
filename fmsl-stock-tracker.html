@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FMSL Stock Tracker v.cTestD</title>
+    <title>FMSL Stock Tracker v.cTestE</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
     <style>
         .animate-spin {
             animation: spin 1s linear infinite;
@@ -67,14 +66,14 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.cTestD</h1>
+            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.cTestE</h1>
             <div class="flex items-center space-x-4">
                 <div id="auto-refresh-status" class="text-sm text-gray-500 flex items-center space-x-2">
-                    <i data-lucide="clock" class="w-4 h-4"></i>
+                    <span title="Clock">⏰</span>
                     <span>Auto-refresh: <span id="refresh-countdown">5:00</span></span>
                 </div>
                 <button id="manual-refresh-btn" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span title="Refresh">🔄</span>
                     <span>Refresh Now</span>
                 </button>
             </div>
@@ -115,17 +114,17 @@
             <div class="grid grid-cols-7 gap-4 mb-4 pb-3 border-b border-gray-200">
                 <div class="font-semibold text-gray-700 text-center sortable-header rounded px-2 py-1" onclick="sortStocks('market')" title="Click to sort by Market">
                     Market
-                    <i data-lucide="chevron-up-down" class="w-4 h-4 inline sort-indicator" id="sort-market"></i>
+                    <span title="Sort">↕️</span>
                 </div>
                 <div class="font-semibold text-gray-700 text-center sortable-header rounded px-2 py-1" onclick="sortStocks('ticker')" title="Click to sort by Ticker">
                     Ticker
-                    <i data-lucide="chevron-up-down" class="w-4 h-4 inline sort-indicator" id="sort-ticker"></i>
+                    <span title="Sort">↕️</span>
                 </div>
                 <div class="font-semibold text-gray-700 text-center">Company</div>
                 <div class="font-semibold text-gray-700 text-center">Price</div>
                 <div class="font-semibold text-gray-700 text-center sortable-header rounded px-2 py-1" onclick="sortStocks('change')" title="Click to sort by Change">
                     Change
-                    <i data-lucide="chevron-up-down" class="w-4 h-4 inline sort-indicator" id="sort-change"></i>
+                    <span title="Sort">↕️</span>
                 </div>
                 <div class="font-semibold text-gray-700 text-center">Updated</div>
                 <div class="font-semibold text-gray-700 text-center">Actions</div>
@@ -139,7 +138,7 @@
             <!-- Add Stock Button -->
             <div class="mt-6 pt-4 border-t border-gray-200">
                 <button id="add-stock-btn" class="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    <span title="Add">➕</span>
                     <span>Add Stock</span>
                 </button>
             </div>
@@ -147,7 +146,7 @@
 
         <!-- Empty State -->
         <div id="empty-state" class="bg-white rounded-2xl shadow-lg p-12 text-center">
-            <i data-lucide="trending-up" class="w-16 h-16 mx-auto text-gray-400 mb-4"></i>
+            <span title="Up">📈</span>
             <h3 class="text-xl font-semibold text-gray-700 mb-2">No Watchlist Selected</h3>
             <p class="text-gray-500 mb-6">Create a new watchlist or select an existing one to start tracking stocks</p>
             <button id="create-first-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
@@ -224,11 +223,6 @@
     <div id="message-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <script>
-        // Initialize Lucide icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-
         // Global state
         let watchlists = [];
         let currentWatchlistId = '';
@@ -324,19 +318,15 @@
                 const indicator = document.getElementById(`sort-${key}`);
                 if (indicator) {
                     indicator.className = 'w-4 h-4 inline sort-indicator';
-                    indicator.setAttribute('data-lucide', 'chevron-up-down');
                 }
             });
             if (sortConfig.key) {
                 const activeIndicator = document.getElementById(`sort-${sortConfig.key}`);
                 if (activeIndicator) {
                     activeIndicator.className = 'w-4 h-4 inline sort-indicator sort-active';
-                    const icon = sortConfig.direction === 'asc' ? 'chevron-up' : 'chevron-down';
-                    activeIndicator.setAttribute('data-lucide', icon);
+                    const icon = sortConfig.direction === 'asc' ? '↑' : '↓';
+                    activeIndicator.textContent = icon;
                 }
-            }
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
             }
         }
 
@@ -422,10 +412,6 @@
             updateWatchlistDropdown();
             updateStockRows();
             updateSortIndicators();
-            
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
         }
 
         function updateStockRows() {
@@ -445,10 +431,6 @@
                 const row = createStockRow(ticker, stock);
                 container.appendChild(row);
             });
-
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
 
             // Initialize drag and drop after creating rows
             initializeDragAndDrop();
@@ -497,7 +479,7 @@
             }
 
             const changeClass = stock.change >= 0 ? 'positive' : 'negative';
-            const changeIcon = stock.change >= 0 ? 'trending-up' : 'trending-down';
+            const changeIcon = stock.change >= 0 ? '↑' : '↓';
 
             row.innerHTML = `
                 <div class="text-center">
@@ -507,7 +489,6 @@
                 <div class="text-center font-medium">${stock.name}</div>
                 <div class="text-center font-mono font-semibold">${formatPriceByMarket(stock.price, stock.market)}</div>
                 <div class="text-center ${changeClass} flex items-center justify-center space-x-1">
-                    <i data-lucide="${changeIcon}" class="w-4 h-4"></i>
                     <span>${stock.change >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%</span>
                 </div>
                 <div class="text-center text-sm text-gray-500">${stock.lastUpdated}</div>
@@ -582,7 +563,7 @@
             
             // Add loading state to refresh button
             const refreshBtn = document.getElementById('manual-refresh-btn');
-            const refreshIcon = refreshBtn.querySelector('i');
+            const refreshIcon = refreshBtn.querySelector('span');
             refreshIcon.classList.add('animate-spin');
 
             for (const ticker of currentWatchlist.tickers) {
