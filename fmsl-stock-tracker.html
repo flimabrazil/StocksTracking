@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FMSL Stock Tracker v.cTestE</title>
+    <title>FMSL Stock Tracker v.cTestF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .animate-spin {
@@ -66,7 +66,7 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.cTestE</h1>
+            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.cTestF</h1>
             <div class="flex items-center space-x-4">
                 <div id="auto-refresh-status" class="text-sm text-gray-500 flex items-center space-x-2">
                     <span title="Clock">⏰</span>
@@ -527,13 +527,40 @@
             return row;
         }
 
+        function initializeDragAndDrop() {
+            const container = document.getElementById('stock-rows');
+            const rows = container.getElementsByClassName('stock-row');
+            Array.from(rows).forEach(row => {
+                row.draggable = true;
+                row.addEventListener('dragstart', function(e) {
+                    this.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', this.getAttribute('data-ticker'));
+                });
+                row.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+                row.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    const draggingElement = document.querySelector('.dragging');
+                    if (draggingElement && draggingElement !== this) {
+                        const container = this.parentNode;
+                        const afterElement = getDragAfterElement(container, e.clientY);
+                        if (afterElement) {
+                            container.insertBefore(draggingElement, afterElement);
+                        } else {
+                            container.appendChild(draggingElement);
+                        }
+                        updateWatchlistOrder();
+                    }
+                });
+            });
+        }
+
         function getDragAfterElement(container, y) {
             const draggableElements = [...container.querySelectorAll('.stock-row:not(.dragging)')];
-            
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
-                
                 if (offset < 0 && offset > closest.offset) {
                     return { offset: offset, element: child };
                 } else {
@@ -545,10 +572,8 @@
         function updateWatchlistOrder() {
             const currentWatchlist = getCurrentWatchlist();
             if (!currentWatchlist) return;
-
             const container = document.getElementById('stock-rows');
             const newOrder = Array.from(container.querySelectorAll('.stock-row')).map(row => row.getAttribute('data-ticker'));
-            
             currentWatchlist.tickers = newOrder;
             watchlists = watchlists.map(w => w.id === currentWatchlist.id ? currentWatchlist : w);
             saveWatchlistsToStorage();
