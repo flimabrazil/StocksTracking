@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FMSL Stock Tracker v.cTest</title>
+    <title>FMSL Stock Tracker v.cTestA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
@@ -68,7 +68,7 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.cTest</h1>
+            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.cTestA</h1>
             <div class="flex items-center space-x-4">
                 <div id="auto-refresh-status" class="text-sm text-gray-500 flex items-center space-x-2">
                     <i data-lucide="clock" class="w-4 h-4"></i>
@@ -239,37 +239,6 @@
         let autoRefreshInterval = null;
         let countdownInterval = null;
         let refreshCountdown = 300; // 5 minutes in seconds
-        let FINNHUB_API_KEY = 'd18ofb1r01qt6geqhb8gd18ofb1r01qt6geqhb90';
-
-        // Mock data with persistent prices
-        const MOCK_COMPANIES = {
-            // US Stocks - UPDATED PRICES
-            AAPL: { name: "Apple Inc.", market: "NASDAQ", basePrice: 185.50, lastPrice: 185.50 },
-            GOOGL: { name: "Alphabet Inc.", market: "NASDAQ", basePrice: 142.80, lastPrice: 142.80 },
-            MSFT: { name: "Microsoft Corporation", market: "NASDAQ", basePrice: 415.25, lastPrice: 415.25 },
-            TSLA: { name: "Tesla, Inc.", market: "NASDAQ", basePrice: 248.50, lastPrice: 248.50 },
-            AMZN: { name: "Amazon.com, Inc.", market: "NASDAQ", basePrice: 148.75, lastPrice: 148.75 },
-            NVDA: { name: "NVIDIA Corporation", market: "NASDAQ", basePrice: 875.30, lastPrice: 875.30 },
-            META: { name: "Meta Platforms, Inc.", market: "NASDAQ", basePrice: 485.20, lastPrice: 485.20 },
-            NFLX: { name: "Netflix Inc.", market: "NASDAQ", basePrice: 1205.40, lastPrice: 1205.40 },
-            
-            // Brazilian stocks (B3) - UPDATED PRICES
-            ITSA3: { name: "Itaúsa", market: "B3", basePrice: 10.85, lastPrice: 10.85 },
-            ITSA4: { name: "Itaúsa", market: "B3", basePrice: 11.20, lastPrice: 11.20 },
-            PETR3: { name: "Petrobras", market: "B3", basePrice: 35.80, lastPrice: 35.80 },
-            PETR4: { name: "Petrobras", market: "B3", basePrice: 36.20, lastPrice: 36.20 },
-            VALE3: { name: "Vale", market: "B3", basePrice: 67.20, lastPrice: 67.20 },
-            BBDC4: { name: "Banco Bradesco", market: "B3", basePrice: 14.30, lastPrice: 14.30 },
-            BBAS3: { name: "Banco do Brasil", market: "B3", basePrice: 54.80, lastPrice: 54.80 },
-            ABEV3: { name: "Ambev", market: "B3", basePrice: 13.70, lastPrice: 13.70 },
-            ITUB4: { name: "Itaú Unibanco", market: "B3", basePrice: 32.50, lastPrice: 32.50 },
-            B3SA3: { name: "B3", market: "B3", basePrice: 12.80, lastPrice: 12.80 },
-            BBSE3: { name: "BB Seguridade", market: "B3", basePrice: 28.50, lastPrice: 28.50 },
-            CXSE3: { name: "Caixa Seguridade", market: "B3", basePrice: 8.90, lastPrice: 8.90 },
-            ISAE4: { name: "Isa Cteep", market: "B3", basePrice: 11.40, lastPrice: 11.40 },
-            EGIE3: { name: "Engie Brasil", market: "B3", basePrice: 15.20, lastPrice: 15.20 },
-            TAEE3: { name: "Taesa", market: "B3", basePrice: 42.80, lastPrice: 42.80 },
-        };
 
         // Storage functions
         const STORAGE_KEY = 'fmsl-stock-tracker-watchlists';
@@ -294,20 +263,15 @@
 
         // Auto-refresh functionality
         function startAutoRefresh() {
-            // Clear existing intervals
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             if (countdownInterval) clearInterval(countdownInterval);
-            
-            refreshCountdown = 300; // Reset to 5 minutes
-            
-            // Update countdown every second
+            refreshCountdown = 300;
             countdownInterval = setInterval(() => {
                 refreshCountdown--;
                 updateCountdownDisplay();
-                
                 if (refreshCountdown <= 0) {
                     refreshAllStocks();
-                    refreshCountdown = 300; // Reset
+                    refreshCountdown = 300;
                 }
             }, 1000);
         }
@@ -326,53 +290,37 @@
 
         // Sorting functionality
         function sortStocks(key) {
-            console.log('Sorting by:', key); // Debug log
             const currentWatchlist = getCurrentWatchlist();
             if (!currentWatchlist || stockData.length === 0) return;
-
-            // Update sort configuration
             if (sortConfig.key === key) {
                 sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
             } else {
                 sortConfig.key = key;
                 sortConfig.direction = 'asc';
             }
-
-            // Sort the stock data
             stockData.sort((a, b) => {
                 let aValue = a[key];
                 let bValue = b[key];
-                
-                // Handle special cases
                 if (key === 'change') {
                     aValue = parseFloat(a.changePercent);
                     bValue = parseFloat(b.changePercent);
                 }
-
-                // Convert to lowercase for string comparison
                 if (typeof aValue === 'string') {
                     aValue = aValue.toLowerCase();
                     bValue = bValue.toLowerCase();
                 }
-
-                // Handle numeric comparison
                 if (typeof aValue === 'number') {
                     return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
                 }
-
-                // Handle string comparison
                 if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             });
-
-            // Update UI
             updateSortIndicators();
             updateStockRows();
         }
 
         function updateSortIndicators() {
-            // Reset all indicators
             ['market', 'ticker', 'change'].forEach(key => {
                 const indicator = document.getElementById(`sort-${key}`);
                 if (indicator) {
@@ -380,8 +328,6 @@
                     indicator.setAttribute('data-lucide', 'chevron-up-down');
                 }
             });
-
-            // Set active indicator
             if (sortConfig.key) {
                 const activeIndicator = document.getElementById(`sort-${sortConfig.key}`);
                 if (activeIndicator) {
@@ -390,8 +336,6 @@
                     activeIndicator.setAttribute('data-lucide', icon);
                 }
             }
-
-            // Re-initialize Lucide icons
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
@@ -400,129 +344,52 @@
         // Utility functions
         function formatPriceByMarket(price, market) {
             switch (market) {
-                case 'B3':
-                    return `R$${price.toFixed(2)}`;
+                case 'B3': return `R$${price.toFixed(2)}`;
                 case 'TSE':
-                case 'KRX':
-                    return `¥${price.toFixed(0)}`;
-                case 'XETRA':
-                    return `€${price.toFixed(2)}`;
-                default:
-                    return `$${price.toFixed(2)}`;
+                case 'KRX': return `¥${price.toFixed(0)}`;
+                case 'XETRA': return `€${price.toFixed(2)}`;
+                default: return `$${price.toFixed(2)}`;
             }
         }
 
         function detectMarketFromTicker(ticker) {
             const upperTicker = ticker.toUpperCase();
-            
-            if (MOCK_COMPANIES[upperTicker]) {
-                return MOCK_COMPANIES[upperTicker].market;
-            }
-            
             if (/[3-6]$|11$/.test(upperTicker)) return 'B3';
             if (upperTicker.includes('.DE')) return 'XETRA';
             if (upperTicker.includes('.T')) return 'TSE';
             if (upperTicker.includes('.KS')) return 'KRX';
-            
             const nasdaqStocks = ['AAPL', 'GOOGL', 'GOOG', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX', 'ADBE', 'INTC', 'CSCO', 'CMCSA', 'PEP', 'AVGO', 'TXN', 'QCOM', 'COST', 'SBUX', 'GILD'];
             if (nasdaqStocks.includes(upperTicker)) return 'NASDAQ';
-            
             return 'NYSE';
         }
 
-        function generateMockStockData(ticker, forcedMarket = null) {
-            const upperTicker = ticker.toUpperCase();
-            let company = MOCK_COMPANIES[upperTicker];
-            
-            if (!company) {
-                const detectedMarket = forcedMarket && forcedMarket !== 'auto' ? forcedMarket : detectMarketFromTicker(upperTicker);
-                company = {
-                    name: getCompanyNameByMarket(upperTicker, detectedMarket),
-                    market: detectedMarket,
-                    basePrice: getDefaultPriceForMarket(detectedMarket),
-                    lastPrice: getDefaultPriceForMarket(detectedMarket),
-                };
-                MOCK_COMPANIES[upperTicker] = company;
-            } else if (forcedMarket && forcedMarket !== 'auto') {
-                company = { ...company, market: forcedMarket };
-            }
+        // Helper to get Yahoo Finance symbol
+        function getYahooSymbol(ticker, market) {
+            if (market === 'B3') return ticker + '.SA';
+            if (market === 'XETRA') return ticker + '.DE';
+            // Add more rules for other markets if needed
+            return ticker;
+        }
 
-            // More realistic price changes (max 0.2% change from last price)
-            const maxChange = company.lastPrice * 0.002; // 0.2% max change
-            const volatility = (Math.random() * maxChange * 2) - maxChange;
-            const price = company.lastPrice + volatility;
-            const change = price - company.basePrice;
-            const changePercent = (change / company.basePrice) * 100;
-            
-            // Update the last price for next time
-            company.lastPrice = price;
-            MOCK_COMPANIES[upperTicker] = company;
-
+        // Yahoo Finance API integration (unofficial, via CORS proxy)
+        async function fetchYahooQuote(ticker, market) {
+            const symbol = getYahooSymbol(ticker, market);
+            const baseUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(baseUrl);
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error('Failed to fetch from Yahoo Finance');
+            const data = await response.json();
+            const quote = data.quoteResponse.result[0];
+            if (!quote) throw new Error('No data for this ticker');
             return {
-                ticker: upperTicker,
-                name: company.name,
-                price: Number(price.toFixed(2)),
-                change: Number(change.toFixed(2)),
-                changePercent: Number(changePercent.toFixed(2)),
-                market: company.market,
+                ticker: ticker,
+                name: quote.shortName || ticker,
+                price: quote.regularMarketPrice,
+                change: quote.regularMarketChange,
+                changePercent: quote.regularMarketChangePercent,
+                market: market,
                 lastUpdated: new Date().toLocaleTimeString(),
             };
-        }
-
-        function getCompanyNameByMarket(ticker, market) {
-            switch (market) {
-                case 'B3':
-                    return `${ticker.replace(/[3-6]$|11$/, '')} S.A.`;
-                case 'XETRA':
-                    return `${ticker.replace('.DE', '')} AG`;
-                case 'TSE':
-                    return `${ticker.replace('.T', '')} Corp`;
-                case 'KRX':
-                    return `${ticker.replace('.KS', '')} Co Ltd`;
-                default:
-                    return `${ticker} Corporation`;
-            }
-        }
-
-        function getDefaultPriceForMarket(market) {
-            switch (market) {
-                case 'B3': return Math.random() * 50 + 5;
-                case 'XETRA': return Math.random() * 200 + 50;
-                case 'TSE': return Math.random() * 5000 + 1000;
-                case 'KRX': return Math.random() * 100000 + 10000;
-                case 'NASDAQ': return Math.random() * 800 + 100;
-                default: return Math.random() * 300 + 50;
-            }
-        }
-
-        function simulateApiCall(ticker, forcedMarket = null) {
-            return new Promise((resolve, reject) => {
-                const delay = Math.random() * 1500 + 500;
-                setTimeout(() => {
-                    try {
-                        const data = generateMockStockData(ticker, forcedMarket);
-                        resolve(data);
-                    } catch (error) {
-                        reject(new Error(`Failed to fetch data for ${ticker}`));
-                    }
-                }, delay);
-            });
-        }
-
-        function showMessage(message, type = 'success') {
-            const container = document.getElementById('message-container');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `p-4 rounded-lg shadow-lg transform transition-all ${
-                type === 'success' 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-red-500 text-white'
-            }`;
-            messageDiv.textContent = message;
-            container.appendChild(messageDiv);
-            
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 4000);
         }
 
         function getCurrentWatchlist() {
@@ -704,34 +571,6 @@
             currentWatchlist.tickers = newOrder;
             watchlists = watchlists.map(w => w.id === currentWatchlist.id ? currentWatchlist : w);
             saveWatchlistsToStorage();
-        }
-
-        // Helper to get Yahoo Finance symbol
-        function getYahooSymbol(ticker, market) {
-            if (market === 'B3') return ticker + '.SA';
-            if (market === 'XETRA') return ticker + '.DE';
-            // Add more rules for other markets if needed
-            return ticker;
-        }
-
-        // Yahoo Finance API integration (unofficial)
-        async function fetchYahooQuote(ticker, market) {
-            const symbol = getYahooSymbol(ticker, market);
-            const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Failed to fetch from Yahoo Finance');
-            const data = await response.json();
-            const quote = data.quoteResponse.result[0];
-            if (!quote) throw new Error('No data for this ticker');
-            return {
-                ticker: ticker,
-                name: quote.shortName || ticker,
-                price: quote.regularMarketPrice,
-                change: quote.regularMarketChange,
-                changePercent: quote.regularMarketChangePercent,
-                market: market,
-                lastUpdated: new Date().toLocaleTimeString(),
-            };
         }
 
         // Refresh all stocks
@@ -955,7 +794,7 @@
                     try {
                         await Promise.all(currentWatchlist.tickers.map(async ticker => {
                             try {
-                                const data = await simulateApiCall(ticker);
+                                const data = await fetchYahooQuote(ticker, detectMarketFromTicker(ticker));
                                 stockData = stockData.filter(s => s.ticker !== ticker);
                                 stockData.push(data);
                             } catch (err) {
@@ -1002,7 +841,7 @@
                             loadingTickers.add(ticker);
                             updateStockRows();
                             try {
-                                const data = await simulateApiCall(ticker);
+                                const data = await fetchYahooQuote(ticker, detectMarketFromTicker(ticker));
                                 stockData = stockData.filter(s => s.ticker !== ticker);
                                 stockData.push(data);
                             } catch (err) {
@@ -1126,11 +965,6 @@
                     document.getElementById('market-select').value = 'auto';
                 }
             });
-
-            // Prompt for Finnhub API key if not set
-            if (!FINNHUB_API_KEY) {
-                FINNHUB_API_KEY = prompt('Enter your Finnhub API key (leave blank to use mock data):') || '';
-            }
         });
 
         // Make functions globally available
