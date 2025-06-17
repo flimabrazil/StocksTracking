@@ -23,6 +23,13 @@
         .modal-backdrop {
             backdrop-filter: blur(4px);
         }
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .stock-row:hover .delete-btn {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-6">
@@ -164,12 +171,6 @@
     <div id="message-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <script>
-        // Debug mode
-        const DEBUG = true;
-        function log(...args) {
-            if (DEBUG) console.log('[FMSL Tracker]', ...args);
-        }
-
         // Initialize Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -181,39 +182,45 @@
         let stockData = [];
         let loadingTickers = new Set();
 
-        // Mock stock data
+        // Updated mock stock data with realistic prices
         const MOCK_COMPANIES = {
-            // US Stocks
-            AAPL: { name: "Apple Inc.", market: "NASDAQ", basePrice: 175 },
-            GOOGL: { name: "Alphabet Inc.", market: "NASDAQ", basePrice: 140 },
-            MSFT: { name: "Microsoft Corporation", market: "NASDAQ", basePrice: 380 },
-            TSLA: { name: "Tesla, Inc.", market: "NASDAQ", basePrice: 250 },
-            AMZN: { name: "Amazon.com, Inc.", market: "NASDAQ", basePrice: 145 },
-            NVDA: { name: "NVIDIA Corporation", market: "NASDAQ", basePrice: 480 },
-            META: { name: "Meta Platforms, Inc.", market: "NASDAQ", basePrice: 320 },
-            "BRK.B": { name: "Berkshire Hathaway Inc.", market: "NYSE", basePrice: 420 },
-            JPM: { name: "JPMorgan Chase & Co", market: "NYSE", basePrice: 155 },
-            JNJ: { name: "Johnson & Johnson", market: "NYSE", basePrice: 165 },
+            // US Stocks - UPDATED PRICES
+            AAPL: { name: "Apple Inc.", market: "NASDAQ", basePrice: 185.50 },
+            GOOGL: { name: "Alphabet Inc.", market: "NASDAQ", basePrice: 142.80 },
+            MSFT: { name: "Microsoft Corporation", market: "NASDAQ", basePrice: 415.25 },
+            TSLA: { name: "Tesla, Inc.", market: "NASDAQ", basePrice: 248.50 },
+            AMZN: { name: "Amazon.com, Inc.", market: "NASDAQ", basePrice: 148.75 },
+            NVDA: { name: "NVIDIA Corporation", market: "NASDAQ", basePrice: 875.30 },
+            META: { name: "Meta Platforms, Inc.", market: "NASDAQ", basePrice: 485.20 },
+            NFLX: { name: "Netflix Inc.", market: "NASDAQ", basePrice: 1205.40 }, // FIXED: NASDAQ + correct price
+            "BRK.B": { name: "Berkshire Hathaway Inc.", market: "NYSE", basePrice: 420.15 },
+            JPM: { name: "JPMorgan Chase & Co", market: "NYSE", basePrice: 155.80 },
+            JNJ: { name: "Johnson & Johnson", market: "NYSE", basePrice: 165.45 },
+            BAC: { name: "Bank of America Corp", market: "NYSE", basePrice: 32.85 },
+            WMT: { name: "Walmart Inc.", market: "NYSE", basePrice: 165.20 },
+            PG: { name: "Procter & Gamble Co", market: "NYSE", basePrice: 155.75 },
+            HD: { name: "Home Depot Inc", market: "NYSE", basePrice: 340.60 },
+            DIS: { name: "Walt Disney Co", market: "NYSE", basePrice: 95.25 },
             
-            // Brazilian stocks (B3)
-            ITSA3: { name: "Itaúsa", market: "B3", basePrice: 9.5 },
-            ITSA4: { name: "Itaúsa", market: "B3", basePrice: 9.8 },
-            PETR3: { name: "Petrobras", market: "B3", basePrice: 35.8 },
-            PETR4: { name: "Petrobras", market: "B3", basePrice: 36.2 },
-            VALE3: { name: "Vale", market: "B3", basePrice: 67.2 },
-            BBDC4: { name: "Banco Bradesco", market: "B3", basePrice: 14.3 },
-            ABEV3: { name: "Ambev", market: "B3", basePrice: 13.7 },
-            ITUB4: { name: "Itaú Unibanco", market: "B3", basePrice: 32.5 },
-            MGLU3: { name: "Magazine Luiza", market: "B3", basePrice: 2.1 },
-            B3SA3: { name: "B3", market: "B3", basePrice: 12.8 },
-            BBA3: { name: "Banco da Amazônia", market: "B3", basePrice: 15.2 },
-            BBSE3: { name: "BB Seguridade", market: "B3", basePrice: 28.5 },
-            CXSE3: { name: "Caixa Seguridade", market: "B3", basePrice: 8.9 },
-            ISAE4: { name: "Isa Cteep", market: "B3", basePrice: 11.4 },
+            // Brazilian stocks (B3) - UPDATED PRICES
+            ITSA3: { name: "Itaúsa", market: "B3", basePrice: 10.85 }, // FIXED: Updated price
+            ITSA4: { name: "Itaúsa", market: "B3", basePrice: 11.20 },
+            PETR3: { name: "Petrobras", market: "B3", basePrice: 35.80 },
+            PETR4: { name: "Petrobras", market: "B3", basePrice: 36.20 },
+            VALE3: { name: "Vale", market: "B3", basePrice: 67.20 },
+            BBDC4: { name: "Banco Bradesco", market: "B3", basePrice: 14.30 },
+            BBAS3: { name: "Banco do Brasil", market: "B3", basePrice: 54.80 }, // FIXED: Correct name
+            ABEV3: { name: "Ambev", market: "B3", basePrice: 13.70 },
+            ITUB4: { name: "Itaú Unibanco", market: "B3", basePrice: 32.50 },
+            MGLU3: { name: "Magazine Luiza", market: "B3", basePrice: 2.10 },
+            B3SA3: { name: "B3", market: "B3", basePrice: 12.80 },
+            BBSE3: { name: "BB Seguridade", market: "B3", basePrice: 28.50 },
+            CXSE3: { name: "Caixa Seguridade", market: "B3", basePrice: 8.90 },
+            ISAE4: { name: "Isa Cteep", market: "B3", basePrice: 11.40 },
             
             // European stocks
-            "SAP.DE": { name: "SAP SE", market: "XETRA", basePrice: 178.5 },
-            "BAYN.DE": { name: "Bayer AG", market: "XETRA", basePrice: 28.4 },
+            "SAP.DE": { name: "SAP SE", market: "XETRA", basePrice: 178.50 },
+            "BAYN.DE": { name: "Bayer AG", market: "XETRA", basePrice: 28.40 },
             
             // Asian stocks
             "7203.T": { name: "Toyota Motor Corp", market: "TSE", basePrice: 2850 },
@@ -227,7 +234,6 @@
         function saveWatchlistsToStorage() {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlists));
-                log('Saved watchlists:', watchlists);
             } catch (error) {
                 console.error('Failed to save watchlists:', error);
             }
@@ -236,9 +242,7 @@
         function loadWatchlistsFromStorage() {
             try {
                 const stored = localStorage.getItem(STORAGE_KEY);
-                const result = stored ? JSON.parse(stored) : [];
-                log('Loaded watchlists:', result);
-                return result;
+                return stored ? JSON.parse(stored) : [];
             } catch (error) {
                 console.error('Failed to load watchlists:', error);
                 return [];
@@ -260,55 +264,64 @@
             }
         }
 
+        // IMPROVED auto-detection logic
+        function detectMarketFromTicker(ticker) {
+            const upperTicker = ticker.toUpperCase();
+            
+            // Check if it's in our known companies first
+            if (MOCK_COMPANIES[upperTicker]) {
+                return MOCK_COMPANIES[upperTicker].market;
+            }
+            
+            // Brazilian stocks pattern
+            if (/[3-6]$|11$/.test(upperTicker)) {
+                return 'B3';
+            }
+            
+            // German stocks
+            if (upperTicker.includes('.DE')) {
+                return 'XETRA';
+            }
+            
+            // Japanese stocks
+            if (upperTicker.includes('.T')) {
+                return 'TSE';
+            }
+            
+            // Korean stocks
+            if (upperTicker.includes('.KS')) {
+                return 'KRX';
+            }
+            
+            // Common NASDAQ stocks
+            const nasdaqStocks = ['AAPL', 'GOOGL', 'GOOG', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX', 'ADBE', 'INTC', 'CSCO', 'CMCSA', 'PEP', 'AVGO', 'TXN', 'QCOM', 'COST', 'SBUX', 'GILD'];
+            if (nasdaqStocks.includes(upperTicker)) {
+                return 'NASDAQ';
+            }
+            
+            // Default to NYSE for other US stocks
+            return 'NYSE';
+        }
+
         function generateMockStockData(ticker, forcedMarket = null) {
             const upperTicker = ticker.toUpperCase();
             let company = MOCK_COMPANIES[upperTicker];
             
-            // If not found, try to auto-detect based on patterns
+            // If not found, create based on market detection
             if (!company) {
-                if (forcedMarket && forcedMarket !== 'auto') {
-                    company = {
-                        name: `${upperTicker} Corporation`,
-                        market: forcedMarket,
-                        basePrice: getDefaultPriceForMarket(forcedMarket),
-                    };
-                } else if (/[3-6]$|11$/.test(upperTicker)) {
-                    // Brazilian stocks
-                    company = {
-                        name: `${upperTicker.replace(/[3-6]$|11$/, '')} S.A.`,
-                        market: 'B3',
-                        basePrice: Math.random() * 40 + 5,
-                    };
-                } else if (upperTicker.includes('.DE')) {
-                    company = {
-                        name: `${upperTicker.replace('.DE', '')} AG`,
-                        market: 'XETRA',
-                        basePrice: Math.random() * 200 + 50,
-                    };
-                } else if (upperTicker.includes('.T')) {
-                    company = {
-                        name: `${upperTicker.replace('.T', '')} Corp`,
-                        market: 'TSE',
-                        basePrice: Math.random() * 5000 + 1000,
-                    };
-                } else if (upperTicker.includes('.KS')) {
-                    company = {
-                        name: `${upperTicker.replace('.KS', '')} Co Ltd`,
-                        market: 'KRX',
-                        basePrice: Math.random() * 100000 + 10000,
-                    };
-                } else {
-                    company = {
-                        name: `${upperTicker} Corporation`,
-                        market: 'NYSE',
-                        basePrice: Math.random() * 300 + 50,
-                    };
-                }
+                const detectedMarket = forcedMarket && forcedMarket !== 'auto' ? forcedMarket : detectMarketFromTicker(upperTicker);
+                
+                company = {
+                    name: getCompanyNameByMarket(upperTicker, detectedMarket),
+                    market: detectedMarket,
+                    basePrice: getDefaultPriceForMarket(detectedMarket),
+                };
             } else if (forcedMarket && forcedMarket !== 'auto') {
+                // Override market if forced
                 company = { ...company, market: forcedMarket };
             }
 
-            const volatility = Math.random() * 0.1 - 0.05;
+            const volatility = Math.random() * 0.08 - 0.04; // -4% to +4% for more realistic changes
             const price = company.basePrice * (1 + volatility);
             const change = price - company.basePrice;
             const changePercent = (change / company.basePrice) * 100;
@@ -324,12 +337,28 @@
             };
         }
 
+        function getCompanyNameByMarket(ticker, market) {
+            switch (market) {
+                case 'B3':
+                    return `${ticker.replace(/[3-6]$|11$/, '')} S.A.`;
+                case 'XETRA':
+                    return `${ticker.replace('.DE', '')} AG`;
+                case 'TSE':
+                    return `${ticker.replace('.T', '')} Corp`;
+                case 'KRX':
+                    return `${ticker.replace('.KS', '')} Co Ltd`;
+                default:
+                    return `${ticker} Corporation`;
+            }
+        }
+
         function getDefaultPriceForMarket(market) {
             switch (market) {
                 case 'B3': return Math.random() * 50 + 5;
                 case 'XETRA': return Math.random() * 200 + 50;
                 case 'TSE': return Math.random() * 5000 + 1000;
                 case 'KRX': return Math.random() * 100000 + 10000;
+                case 'NASDAQ': return Math.random() * 800 + 100; // Higher range for NASDAQ
                 default: return Math.random() * 300 + 50;
             }
         }
@@ -349,7 +378,6 @@
         }
 
         function showMessage(message, type = 'success') {
-            log('Showing message:', message, type);
             const container = document.getElementById('message-container');
             const messageDiv = document.createElement('div');
             messageDiv.className = `p-4 rounded-lg shadow-lg transform transition-all ${
@@ -385,8 +413,6 @@
         }
 
         function updateUI() {
-            log('Updating UI, watchlists:', watchlists.length, 'current:', currentWatchlistId);
-            
             const hasWatchlists = watchlists.length > 0;
             const currentWatchlist = getCurrentWatchlist();
             
@@ -441,7 +467,7 @@
                     </div>
                     <div class="text-center">-</div>
                     <div class="text-center">
-                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700">
+                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700 delete-btn">
                             <i data-lucide="x" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -457,7 +483,7 @@
                     <div class="text-center text-gray-500">-</div>
                     <div class="text-center text-gray-500">-</div>
                     <div class="text-center">
-                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700">
+                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700 delete-btn">
                             <i data-lucide="x" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -481,7 +507,7 @@
                 </div>
                 <div class="text-center text-sm text-gray-500 flex items-center justify-between">
                     <span>${stock.lastUpdated}</span>
-                    <button onclick="removeTicker('${stock.ticker}')" class="text-red-500 hover:text-red-700 ml-2">
+                    <button onclick="removeTicker('${stock.ticker}')" class="text-red-500 hover:text-red-700 ml-2 delete-btn" title="Remove ${stock.ticker}">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -492,8 +518,6 @@
 
         // Event handlers
         function createWatchlist(name) {
-            log('Creating watchlist:', name);
-            
             if (!name || !name.trim()) {
                 showMessage('Please enter a watchlist name', 'error');
                 return false;
@@ -586,24 +610,27 @@
             return true;
         }
 
+        // FIXED: Remove ticker function
         function removeTicker(ticker) {
             const currentWatchlist = getCurrentWatchlist();
             if (!currentWatchlist) return;
 
-            const updatedWatchlist = {
-                ...currentWatchlist,
-                tickers: currentWatchlist.tickers.filter(t => t !== ticker),
-                updatedAt: new Date().toISOString(),
-            };
+            if (confirm(`Remove ${ticker} from watchlist?`)) {
+                const updatedWatchlist = {
+                    ...currentWatchlist,
+                    tickers: currentWatchlist.tickers.filter(t => t !== ticker),
+                    updatedAt: new Date().toISOString(),
+                };
 
-            watchlists = watchlists.map(w => w.id === currentWatchlist.id ? updatedWatchlist : w);
-            saveWatchlistsToStorage();
-            
-            stockData = stockData.filter(s => s.ticker !== ticker);
-            loadingTickers.delete(ticker);
-            
-            updateUI();
-            showMessage(`${ticker} removed from watchlist`);
+                watchlists = watchlists.map(w => w.id === currentWatchlist.id ? updatedWatchlist : w);
+                saveWatchlistsToStorage();
+                
+                stockData = stockData.filter(s => s.ticker !== ticker);
+                loadingTickers.delete(ticker);
+                
+                updateUI();
+                showMessage(`${ticker} removed from watchlist`);
+            }
         }
 
         function exportWatchlists() {
@@ -655,8 +682,6 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
-            log('DOM loaded, initializing app...');
-            
             // Load saved data
             watchlists = loadWatchlistsFromStorage();
             if (watchlists.length > 0) {
@@ -664,9 +689,8 @@
             }
             updateUI();
 
-            // Watchlist dropdown change
+            // Event listeners
             document.getElementById('watchlist-dropdown').addEventListener('change', function(e) {
-                log('Watchlist dropdown changed to:', e.target.value);
                 currentWatchlistId = e.target.value;
                 stockData = [];
                 loadingTickers.clear();
@@ -692,27 +716,22 @@
                 }
             });
 
-            // Create New button - FIXED
+            // Create New button
             document.getElementById('create-new-btn').addEventListener('click', function() {
-                log('Create New button clicked');
                 document.getElementById('create-modal').classList.remove('hidden');
                 setTimeout(() => {
                     document.getElementById('watchlist-name').focus();
                 }, 100);
             });
 
-            // Create first watchlist button
             document.getElementById('create-first-btn').addEventListener('click', function() {
-                log('Create first button clicked');
                 document.getElementById('create-modal').classList.remove('hidden');
                 setTimeout(() => {
                     document.getElementById('watchlist-name').focus();
                 }, 100);
             });
 
-            // Create watchlist confirm
             document.getElementById('create-confirm-btn').addEventListener('click', function() {
-                log('Create confirm button clicked');
                 const name = document.getElementById('watchlist-name').value.trim();
                 if (createWatchlist(name)) {
                     document.getElementById('create-modal').classList.add('hidden');
@@ -720,14 +739,11 @@
                 }
             });
 
-            // Create watchlist cancel
             document.getElementById('create-cancel-btn').addEventListener('click', function() {
-                log('Create cancel button clicked');
                 document.getElementById('create-modal').classList.add('hidden');
                 document.getElementById('watchlist-name').value = '';
             });
 
-            // Enter key in watchlist name input
             document.getElementById('watchlist-name').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -735,9 +751,8 @@
                 }
             });
 
-            // Add stock button
+            // Add stock modal
             document.getElementById('add-stock-btn').addEventListener('click', function() {
-                log('Add stock button clicked');
                 if (!getCurrentWatchlist()) {
                     showMessage('Please select a watchlist first', 'error');
                     return;
@@ -748,7 +763,6 @@
                 }, 100);
             });
 
-            // Add stock confirm
             document.getElementById('add-confirm-btn').addEventListener('click', async function() {
                 const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
                 const market = document.getElementById('market-select').value;
@@ -770,14 +784,12 @@
                 }
             });
 
-            // Add stock cancel
             document.getElementById('add-cancel-btn').addEventListener('click', function() {
                 document.getElementById('add-stock-modal').classList.add('hidden');
                 document.getElementById('ticker-input').value = '';
                 document.getElementById('market-select').value = 'auto';
             });
 
-            // Enter key in ticker input
             document.getElementById('ticker-input').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -785,7 +797,6 @@
                 }
             });
 
-            // Auto-uppercase ticker input
             document.getElementById('ticker-input').addEventListener('input', function(e) {
                 e.target.value = e.target.value.toUpperCase();
             });
@@ -795,7 +806,7 @@
             document.getElementById('export-btn').addEventListener('click', exportWatchlists);
             document.getElementById('import-input').addEventListener('change', importWatchlists);
 
-            // Modal background clicks to close
+            // Modal background clicks
             document.getElementById('create-modal').addEventListener('click', function(e) {
                 if (e.target === this) {
                     this.classList.add('hidden');
@@ -810,11 +821,9 @@
                     document.getElementById('market-select').value = 'auto';
                 }
             });
-
-            log('App initialization complete');
         });
 
-        // Make removeTicker globally available for onclick handlers
+        // Make removeTicker globally available
         window.removeTicker = removeTicker;
     </script>
 </body>
