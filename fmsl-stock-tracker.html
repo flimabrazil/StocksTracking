@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FMSL Stock Tracker v.cTestF</title>
+    <title>FMSL Stock Tracker v.cTestG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .animate-spin {
@@ -66,7 +66,7 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.cTestF</h1>
+            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.cTestG</h1>
             <div class="flex items-center space-x-4">
                 <div id="auto-refresh-status" class="text-sm text-gray-500 flex items-center space-x-2">
                     <span title="Clock">⏰</span>
@@ -362,26 +362,24 @@
 
         // Yahoo Finance API integration (unofficial, via CORS proxy)
         async function fetchYahooQuote(ticker, market) {
-            console.log('Fetching from Yahoo:', ticker, market);
-            const symbol = getYahooSymbol(ticker, market);
-            const baseUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
-            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(baseUrl);
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error('Failed to fetch from Yahoo Finance');
-            const data = await response.json();
-            const quote = data.quoteResponse.result[0];
-            if (!quote) throw new Error('No data for this ticker');
-            return {
-                ticker: ticker,
-                name: quote.shortName || ticker,
-                price: quote.regularMarketPrice,
-                change: quote.regularMarketChange,
-                changePercent: quote.regularMarketChangePercent,
-                market: market,
-                lastUpdated: new Date().toLocaleTimeString(),
-            };
-        }
-
+    const symbol = getYahooSymbol(ticker, market);
+    // Use your local proxy instead of a CORS proxy
+    const url = `http://localhost:3001/stock/${symbol}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch from local proxy');
+    const data = await response.json();
+    const quote = data.quoteResponse.result[0];
+    if (!quote) throw new Error('No data for this ticker');
+    return {
+        ticker: ticker,
+        name: quote.shortName || ticker,
+        price: quote.regularMarketPrice,
+        change: quote.regularMarketChange,
+        changePercent: quote.regularMarketChangePercent,
+        market: market,
+        lastUpdated: new Date().toLocaleTimeString(),
+    };
+}
         function getCurrentWatchlist() {
             return watchlists.find(w => w.id === currentWatchlistId);
         }
