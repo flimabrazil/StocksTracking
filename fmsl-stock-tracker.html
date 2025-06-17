@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FMSL Stock Tracker v.c3</title>
+    <title>FMSL Stock Tracker v.c4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
@@ -15,8 +15,16 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+        .stock-row {
+            cursor: move;
+            transition: background-color 0.2s;
+        }
         .stock-row:hover {
             background-color: #f8fafc;
+        }
+        .stock-row.dragging {
+            opacity: 0.5;
+            background-color: #e2e8f0;
         }
         .positive { color: #059669; }
         .negative { color: #dc2626; }
@@ -60,7 +68,7 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.c3</h1>
+            <h1 class="text-3xl font-bold text-gray-800">FMSL Stock Tracker v.c4</h1>
             <div class="flex items-center space-x-4">
                 <div id="auto-refresh-status" class="text-sm text-gray-500 flex items-center space-x-2">
                     <i data-lucide="clock" class="w-4 h-4"></i>
@@ -231,53 +239,36 @@
         let autoRefreshInterval = null;
         let countdownInterval = null;
         let refreshCountdown = 300; // 5 minutes in seconds
+        let FINNHUB_API_KEY = '';
 
-        // Updated mock stock data with realistic prices
+        // Mock data with persistent prices
         const MOCK_COMPANIES = {
             // US Stocks - UPDATED PRICES
-            AAPL: { name: "Apple Inc.", market: "NASDAQ", basePrice: 185.50 },
-            GOOGL: { name: "Alphabet Inc.", market: "NASDAQ", basePrice: 142.80 },
-            MSFT: { name: "Microsoft Corporation", market: "NASDAQ", basePrice: 415.25 },
-            TSLA: { name: "Tesla, Inc.", market: "NASDAQ", basePrice: 248.50 },
-            AMZN: { name: "Amazon.com, Inc.", market: "NASDAQ", basePrice: 148.75 },
-            NVDA: { name: "NVIDIA Corporation", market: "NASDAQ", basePrice: 875.30 },
-            META: { name: "Meta Platforms, Inc.", market: "NASDAQ", basePrice: 485.20 },
-            NFLX: { name: "Netflix Inc.", market: "NASDAQ", basePrice: 1205.40 },
-            "BRK.B": { name: "Berkshire Hathaway Inc.", market: "NYSE", basePrice: 420.15 },
-            JPM: { name: "JPMorgan Chase & Co", market: "NYSE", basePrice: 155.80 },
-            JNJ: { name: "Johnson & Johnson", market: "NYSE", basePrice: 165.45 },
-            BAC: { name: "Bank of America Corp", market: "NYSE", basePrice: 32.85 },
-            WMT: { name: "Walmart Inc.", market: "NYSE", basePrice: 165.20 },
-            PG: { name: "Procter & Gamble Co", market: "NYSE", basePrice: 155.75 },
-            HD: { name: "Home Depot Inc", market: "NYSE", basePrice: 340.60 },
-            DIS: { name: "Walt Disney Co", market: "NYSE", basePrice: 95.25 },
+            AAPL: { name: "Apple Inc.", market: "NASDAQ", basePrice: 185.50, lastPrice: 185.50 },
+            GOOGL: { name: "Alphabet Inc.", market: "NASDAQ", basePrice: 142.80, lastPrice: 142.80 },
+            MSFT: { name: "Microsoft Corporation", market: "NASDAQ", basePrice: 415.25, lastPrice: 415.25 },
+            TSLA: { name: "Tesla, Inc.", market: "NASDAQ", basePrice: 248.50, lastPrice: 248.50 },
+            AMZN: { name: "Amazon.com, Inc.", market: "NASDAQ", basePrice: 148.75, lastPrice: 148.75 },
+            NVDA: { name: "NVIDIA Corporation", market: "NASDAQ", basePrice: 875.30, lastPrice: 875.30 },
+            META: { name: "Meta Platforms, Inc.", market: "NASDAQ", basePrice: 485.20, lastPrice: 485.20 },
+            NFLX: { name: "Netflix Inc.", market: "NASDAQ", basePrice: 1205.40, lastPrice: 1205.40 },
             
             // Brazilian stocks (B3) - UPDATED PRICES
-            ITSA3: { name: "Itaúsa", market: "B3", basePrice: 10.85 },
-            ITSA4: { name: "Itaúsa", market: "B3", basePrice: 11.20 },
-            PETR3: { name: "Petrobras", market: "B3", basePrice: 35.80 },
-            PETR4: { name: "Petrobras", market: "B3", basePrice: 36.20 },
-            VALE3: { name: "Vale", market: "B3", basePrice: 67.20 },
-            BBDC4: { name: "Banco Bradesco", market: "B3", basePrice: 14.30 },
-            BBAS3: { name: "Banco do Brasil", market: "B3", basePrice: 54.80 },
-            ABEV3: { name: "Ambev", market: "B3", basePrice: 13.70 },
-            ITUB4: { name: "Itaú Unibanco", market: "B3", basePrice: 32.50 },
-            MGLU3: { name: "Magazine Luiza", market: "B3", basePrice: 2.10 },
-            B3SA3: { name: "B3", market: "B3", basePrice: 12.80 },
-            BBSE3: { name: "BB Seguridade", market: "B3", basePrice: 28.50 },
-            CXSE3: { name: "Caixa Seguridade", market: "B3", basePrice: 8.90 },
-            ISAE4: { name: "Isa Cteep", market: "B3", basePrice: 11.40 },
-            EGIE3: { name: "Engie Brasil", market: "B3", basePrice: 15.20 },
-            TAEE3: { name: "Taesa", market: "B3", basePrice: 42.80 },
-            
-            // European stocks
-            "SAP.DE": { name: "SAP SE", market: "XETRA", basePrice: 178.50 },
-            "BAYN.DE": { name: "Bayer AG", market: "XETRA", basePrice: 28.40 },
-            
-            // Asian stocks
-            "7203.T": { name: "Toyota Motor Corp", market: "TSE", basePrice: 2850 },
-            "9984.T": { name: "SoftBank Group", market: "TSE", basePrice: 6200 },
-            "005930.KS": { name: "Samsung Electronics", market: "KRX", basePrice: 72000 },
+            ITSA3: { name: "Itaúsa", market: "B3", basePrice: 10.85, lastPrice: 10.85 },
+            ITSA4: { name: "Itaúsa", market: "B3", basePrice: 11.20, lastPrice: 11.20 },
+            PETR3: { name: "Petrobras", market: "B3", basePrice: 35.80, lastPrice: 35.80 },
+            PETR4: { name: "Petrobras", market: "B3", basePrice: 36.20, lastPrice: 36.20 },
+            VALE3: { name: "Vale", market: "B3", basePrice: 67.20, lastPrice: 67.20 },
+            BBDC4: { name: "Banco Bradesco", market: "B3", basePrice: 14.30, lastPrice: 14.30 },
+            BBAS3: { name: "Banco do Brasil", market: "B3", basePrice: 54.80, lastPrice: 54.80 },
+            ABEV3: { name: "Ambev", market: "B3", basePrice: 13.70, lastPrice: 13.70 },
+            ITUB4: { name: "Itaú Unibanco", market: "B3", basePrice: 32.50, lastPrice: 32.50 },
+            B3SA3: { name: "B3", market: "B3", basePrice: 12.80, lastPrice: 12.80 },
+            BBSE3: { name: "BB Seguridade", market: "B3", basePrice: 28.50, lastPrice: 28.50 },
+            CXSE3: { name: "Caixa Seguridade", market: "B3", basePrice: 8.90, lastPrice: 8.90 },
+            ISAE4: { name: "Isa Cteep", market: "B3", basePrice: 11.40, lastPrice: 11.40 },
+            EGIE3: { name: "Engie Brasil", market: "B3", basePrice: 15.20, lastPrice: 15.20 },
+            TAEE3: { name: "Taesa", market: "B3", basePrice: 42.80, lastPrice: 42.80 },
         };
 
         // Storage functions
@@ -449,16 +440,23 @@
                     name: getCompanyNameByMarket(upperTicker, detectedMarket),
                     market: detectedMarket,
                     basePrice: getDefaultPriceForMarket(detectedMarket),
+                    lastPrice: getDefaultPriceForMarket(detectedMarket),
                 };
+                MOCK_COMPANIES[upperTicker] = company;
             } else if (forcedMarket && forcedMarket !== 'auto') {
                 company = { ...company, market: forcedMarket };
             }
 
-            // More realistic price changes (max 2% change)
-            const volatility = (Math.random() * 0.04 - 0.02);
-            const price = company.basePrice * (1 + volatility);
+            // More realistic price changes (max 0.2% change from last price)
+            const maxChange = company.lastPrice * 0.002; // 0.2% max change
+            const volatility = (Math.random() * maxChange * 2) - maxChange;
+            const price = company.lastPrice + volatility;
             const change = price - company.basePrice;
             const changePercent = (change / company.basePrice) * 100;
+            
+            // Update the last price for next time
+            company.lastPrice = price;
+            MOCK_COMPANIES[upperTicker] = company;
 
             return {
                 ticker: upperTicker,
@@ -584,11 +582,16 @@
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
+
+            // Initialize drag and drop after creating rows
+            initializeDragAndDrop();
         }
 
         function createStockRow(ticker, stock) {
             const row = document.createElement('div');
             row.className = 'grid grid-cols-7 gap-4 py-3 stock-row border-b border-gray-100 items-center';
+            row.setAttribute('data-ticker', ticker);
+            row.draggable = true;
 
             if (loadingTickers.has(ticker)) {
                 row.innerHTML = `
@@ -601,8 +604,8 @@
                     <div class="text-center">-</div>
                     <div class="text-center">-</div>
                     <div class="text-center">
-                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700 delete-btn p-1 rounded" title="Remove ${ticker}">
-                            <i data-lucide="x" class="w-4 h-4"></i>
+                        <button onclick="removeTicker('${ticker}')" class="bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-600 px-2 py-1 rounded-lg text-sm transition-colors" title="Remove ${ticker}">
+                            Remove ${ticker}
                         </button>
                     </div>
                 `;
@@ -618,8 +621,8 @@
                     <div class="text-center text-gray-500">-</div>
                     <div class="text-center text-gray-500">-</div>
                     <div class="text-center">
-                        <button onclick="removeTicker('${ticker}')" class="text-red-500 hover:text-red-700 delete-btn p-1 rounded" title="Remove ${ticker}">
-                            <i data-lucide="x" class="w-4 h-4"></i>
+                        <button onclick="removeTicker('${ticker}')" class="bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-600 px-2 py-1 rounded-lg text-sm transition-colors" title="Remove ${ticker}">
+                            Remove ${ticker}
                         </button>
                     </div>
                 `;
@@ -648,7 +651,78 @@
                 </div>
             `;
 
+            // Add drag and drop event listeners
+            row.addEventListener('dragstart', function(e) {
+                this.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', ticker);
+            });
+
+            row.addEventListener('dragend', function() {
+                this.classList.remove('dragging');
+            });
+
+            row.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const draggingElement = document.querySelector('.dragging');
+                if (draggingElement && draggingElement !== this) {
+                    const container = this.parentNode;
+                    const afterElement = getDragAfterElement(container, e.clientY);
+                    if (afterElement) {
+                        container.insertBefore(draggingElement, afterElement);
+                    } else {
+                        container.appendChild(draggingElement);
+                    }
+                    updateWatchlistOrder();
+                }
+            });
+
             return row;
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.stock-row:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function updateWatchlistOrder() {
+            const currentWatchlist = getCurrentWatchlist();
+            if (!currentWatchlist) return;
+
+            const container = document.getElementById('stock-rows');
+            const newOrder = Array.from(container.querySelectorAll('.stock-row')).map(row => row.getAttribute('data-ticker'));
+            
+            currentWatchlist.tickers = newOrder;
+            watchlists = watchlists.map(w => w.id === currentWatchlist.id ? currentWatchlist : w);
+            saveWatchlistsToStorage();
+        }
+
+        // Finnhub API integration
+        async function fetchFinnhubQuote(ticker) {
+            if (!FINNHUB_API_KEY) throw new Error('No Finnhub API key set');
+            const url = `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to fetch from Finnhub');
+            const data = await response.json();
+            if (!data.c || !data.pc) throw new Error('Invalid data from Finnhub');
+            return {
+                ticker: ticker,
+                name: ticker, // You can enhance this with a lookup if needed
+                price: data.c,
+                change: data.c - data.pc,
+                changePercent: ((data.c - data.pc) / data.pc) * 100,
+                market: detectMarketFromTicker(ticker),
+                lastUpdated: new Date().toLocaleTimeString(),
+            };
         }
 
         // Refresh all stocks
@@ -667,9 +741,13 @@
                 if (!loadingTickers.has(ticker)) {
                     loadingTickers.add(ticker);
                     updateStockRows();
-                    
                     try {
-                        const data = await simulateApiCall(ticker);
+                        let data;
+                        if (FINNHUB_API_KEY) {
+                            data = await fetchFinnhubQuote(ticker);
+                        } else {
+                            data = await simulateApiCall(ticker);
+                        }
                         stockData = stockData.filter(s => s.ticker !== ticker);
                         stockData.push(data);
                     } catch (err) {
@@ -770,7 +848,12 @@
             updateStockRows();
 
             try {
-                const data = await simulateApiCall(ticker, market);
+                let data;
+                if (FINNHUB_API_KEY) {
+                    data = await fetchFinnhubQuote(ticker);
+                } else {
+                    data = await simulateApiCall(ticker, market);
+                }
                 stockData = stockData.filter(s => s.ticker !== ticker);
                 stockData.push(data);
                 showMessage(`${ticker} added successfully!`);
@@ -1041,6 +1124,11 @@
                     document.getElementById('market-select').value = 'auto';
                 }
             });
+
+            // Prompt for Finnhub API key if not set
+            if (!FINNHUB_API_KEY) {
+                FINNHUB_API_KEY = prompt('Enter your Finnhub API key (leave blank to use mock data):') || '';
+            }
         });
 
         // Make functions globally available
